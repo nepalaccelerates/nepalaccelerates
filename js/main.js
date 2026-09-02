@@ -19,7 +19,7 @@ if (!reduced) document.documentElement.classList.add('js');
 
 const BASE = 1400, SUMMIT = 8848.86;
 const STATIONS = [[1400, 'Kathmandu'], [2846, 'Lukla'], [3440, 'Namche Bazaar'], [3867, 'Tengboche'], [5364, 'Base Camp'], [5644, 'Kala Patthar'], [7906, 'South Col'], [8848.86, 'Sagarmatha']];
-const fmt = (m) => (m >= SUMMIT - 0.01 ? '8,848.86' : Math.round(m).toLocaleString('en-US')) + ' m';
+const fmt = (m) => (m >= SUMMIT - 1 ? '8,848.86' : Math.round(m).toLocaleString('en-US')) + ' m';
 
 // ---------- bar ----------
 const nav = $('[data-nav]');
@@ -33,6 +33,7 @@ const station = $('[data-station]');
 const getup = $('#getup');
 const canvas = $('#massif');
 const still = $('#massif-still');
+const plate = $('#plate');
 let target = BASE, shown = BASE, terrain = null, raf = 0;
 
 function targetAltitude() {
@@ -43,11 +44,13 @@ function targetAltitude() {
   return BASE + (SUMMIT - BASE) * p;
 }
 function paint(alt) {
-  if (readout) { readout.textContent = fmt(alt); readout.classList.toggle('is-summit', alt >= SUMMIT - 0.01); }
+  const atTop = alt >= SUMMIT - 1;
+  if (readout) { readout.textContent = fmt(alt); readout.classList.toggle('is-summit', atTop); }
+  if (plate) plate.style.opacity = String(Math.max(0, Math.min(1, 1 - (alt - BASE) / 1900)));
   if (station) {
     const near = STATIONS.find(([m]) => Math.abs(m - alt) < 60);
     station.innerHTML = fmt(alt) + '<br>' + (near ? near[1] : '&nbsp;');
-    station.classList.toggle('is-summit', alt >= SUMMIT - 0.01);
+    station.classList.toggle('is-summit', atTop);
   }
   if (terrain) { terrain.setAltitude(alt); terrain.setProgress((alt - BASE) / (SUMMIT - BASE)); }
 }

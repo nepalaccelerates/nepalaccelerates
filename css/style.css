@@ -47,6 +47,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 em { font-style: italic; }
 
 /* ---------- the massif ---------- */
+#plate {
+  position: fixed; inset: 0; width: 100%; height: 100vh; height: 100svh; z-index: 0;
+  object-fit: cover; object-position: 50% 12%; pointer-events: none; opacity: 1;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, rgba(0,0,0,.35) 38%, transparent 62%);
+          mask-image: linear-gradient(to bottom, #000 0, rgba(0,0,0,.35) 38%, transparent 62%);
+}
 #massif, #massif-still {
   position: fixed; inset: 0; width: 100%; height: 100vh; height: 100svh; z-index: 0;
   pointer-events: none; object-fit: cover; opacity: 0; transition: opacity 600ms var(--ease);
@@ -55,6 +61,12 @@ em { font-style: italic; }
 #massif[hidden] { display: none; }
 /* desktop: contours only where the text is not; the window right of the column */
 @media (min-width: 768px) {
+  #plate {
+    object-position: 62% 8%;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, rgba(0,0,0,.4) 40%, transparent 66%), linear-gradient(to right, transparent 0, transparent 52vw, #000 72vw);
+            mask-image: linear-gradient(to bottom, #000 0, rgba(0,0,0,.4) 40%, transparent 66%), linear-gradient(to right, transparent 0, transparent 52vw, #000 72vw);
+    -webkit-mask-composite: source-in; mask-composite: intersect;
+  }
   #massif, #massif-still {
     -webkit-mask-image: linear-gradient(to right, transparent 0, transparent 64vw, #000 76vw);
     mask-image: linear-gradient(to right, transparent 0, transparent 64vw, #000 76vw);
@@ -68,16 +80,16 @@ em { font-style: italic; }
 }
 /* phone: under the text, faint; louder at the three moments and the door */
 @media (max-width: 767px) {
-  #massif.is-ready { opacity: 0.45; }
+  #massif.is-ready { opacity: 0.16; }
   body.is-moment #massif.is-ready { opacity: 0.9; }
-  #massif-still:not([hidden]) { opacity: 0.45; }
+  #massif-still:not([hidden]) { opacity: 0.16; }
 }
 
 /* ---------- the bar ---------- */
 .bar {
   position: sticky; top: 0; z-index: 3; height: var(--bar); padding: env(safe-area-inset-top) var(--s3) 0;
   display: flex; align-items: center; justify-content: space-between; gap: var(--s2);
-  background: rgba(6, 6, 6, 0.96); border-bottom: 1px solid transparent; transition: border-color var(--t1) var(--ease);
+  background: var(--night); border-bottom: 1px solid transparent; transition: border-color var(--t1) var(--ease);
 }
 .bar.is-on { border-bottom-color: var(--hairline); }
 .mark { font-size: var(--r2); line-height: 1; text-decoration: none; letter-spacing: -0.01em; padding: 11px 0; }
@@ -91,7 +103,7 @@ em { font-style: italic; }
 /* ---------- the sheet ---------- */
 .sheet { position: relative; z-index: 1; max-width: var(--frame); margin: 0 auto; padding: 0 var(--s3); }
 .block { position: relative; width: 100%; max-width: var(--col); padding: var(--air) 0; }
-.block > p { margin: 0 0 1em; }
+.block > p { margin: 0 0 1em; text-wrap: pretty; }
 .block > p:last-child { margin-bottom: 0; }
 .rule { border: 0; height: 1px; background: var(--hairline); margin: 0; max-width: var(--col); }
 @media (min-width: 1000px) {
@@ -106,10 +118,10 @@ em { font-style: italic; }
   font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.04em; line-height: 1.5; color: var(--cream-60);
   margin: 0 0 var(--s2);
 }
-.note .alt { font-size: var(--r-1); letter-spacing: 0.08em; }
+.note .alt { letter-spacing: 0.04em; }
 @media (min-width: 1000px) {
   .note { position: absolute; left: -220px; width: 172px; margin: 0; padding-top: 0.35em; }
-  .note:has(.alt) { position: sticky; top: var(--s7); float: left; margin-left: -220px; }
+  .note:has(.alt) { position: sticky; top: calc(var(--bar) + var(--s3)); float: left; margin-left: -220px; }
 }
 @media (max-width: 999px) { .note:not(.keep) { display: none; } }
 
@@ -117,9 +129,9 @@ em { font-style: italic; }
 .dateline { font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cream-60); margin: 0 0 var(--s4); }
 .display { font-size: var(--r6); line-height: 1.05; letter-spacing: -0.02em; font-weight: 400; margin: 0; }
 h1.display { margin: 0 0 var(--s3); }
-.block > .deck { font-size: var(--r2); line-height: 1.35; font-style: italic; margin: 0 0 var(--s4); }
-.block > .lead { font-size: var(--r3); line-height: 1.25; margin: 0 0 var(--s3); }
-.pull { font-size: var(--r2); line-height: 1.35; font-style: italic; }
+.block > .deck { font-size: var(--r2); line-height: 1.35; font-style: italic; margin: 0 0 var(--s4); text-wrap: pretty; }
+.block > .lead { font-size: var(--r3); line-height: 1.25; margin: 0 0 var(--s3); text-wrap: pretty; }
+.pull { font-size: var(--r2); line-height: 1.35; font-style: italic; text-wrap: pretty; }
 .pull.red { color: var(--brick); }
 .quiet { color: var(--cream-60); font-style: italic; line-height: 1.8; }
 .mono-line { font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.08em; color: var(--cream-60); text-transform: uppercase; }
@@ -155,6 +167,8 @@ select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%23918e88' stroke-width='1.5'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 4px center;
 }
+select:invalid { color: #57554f; }
+select:invalid option { color: var(--cream); }
 select option { background: #101010; color: var(--cream); }
 textarea { min-height: 132px; resize: vertical; }
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
@@ -186,14 +200,14 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 /* ---------- small screens ---------- */
 @media (max-width: 767px) {
   :root { --air: 40px; --air-big: 48px; }
-  body { line-height: 1.55; }
+  body { line-height: 1.6; }
   .hero .note:has(.alt) { display: none; }
   body { hyphens: auto; -webkit-hyphens: auto; }
   .moment { min-height: 0; padding: var(--s4) 0; }
   .moment.summit { min-height: 50svh; padding: var(--s5) 0; }
   .moment.summit .break { font-size: clamp(80px, 22vw, 120px); }
   .hero { padding-top: var(--s4); }
-  .hint { margin-top: 0; }
+  .hint { margin-top: 2px; }
 }
 @media (max-width: 479px) { .block { hyphens: auto; -webkit-hyphens: auto; } }
 
