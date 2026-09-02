@@ -97,7 +97,7 @@ function richReveal() {
   document.fonts.ready.then(() => {
     reveals.forEach((el) => {
       el.classList.add('is-in');
-      SplitText.create(el, { type: 'lines', mask: 'lines', autoSplit: true, onSplit: (s) =>
+      SplitText.create(el, { type: 'lines', mask: 'lines', autoSplit: true, aria: 'none', onSplit: (s) =>
         gsap.from(s.lines, { yPercent: 108, duration: 0.85, stagger: 0.07, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%', once: true } }) });
     });
   });
