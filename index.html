@@ -25,13 +25,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;1,7..72,400&family=IBM+Plex+Mono&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@400&text=%E0%A4%95%E0%A4%BE%E0%A4%A0%E0%A4%AE%E0%A4%BE%E0%A4%A1%E0%A5%8C%E0%A4%82%2C%E0%A4%AD%E0%A4%A6%E0%A5%8C%E0%A5%A8%E0%A5%A6%E0%A5%AE%E0%A5%A9&display=swap">
 <link rel="stylesheet" href="css/style.css">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.min.js"}}</script>
 </head>
 <body>
 
-<img id="plate" alt="" aria-hidden="true" src="assets/img/plate-1200.webp"
-     srcset="assets/img/plate-1200.webp 1200w, assets/img/plate-2400.webp 2400w" sizes="100vw" fetchpriority="high" decoding="async">
 <canvas id="massif" aria-hidden="true"></canvas>
 <img id="massif-still" alt="" hidden aria-hidden="true"
      src="assets/img/massif-summit-1440.webp"
@@ -40,14 +39,31 @@
 
 <header class="bar" data-nav>
   <a class="mark" href="/" aria-label="n/acc, home">n<span class="slash">/</span>acc</a>
-  <span class="readout readout-bar" id="altitude" aria-live="off">1,400 m</span>
+  <span class="readout readout-bar" aria-live="off">
+    <span data-readout>1,400 m</span>
+    <span class="readout-station" data-readout-station>Kathmandu</span>
+  </span>
   <a class="btn btn-bar" href="#door">Write back</a>
 </header>
 
 <main class="sheet">
 
+  <aside class="climb" data-climb aria-label="Altitude and stations on the climb">
+    <p class="readout readout-margin"><span data-readout>1,400 m</span></p>
+    <ol class="stations">
+      <li data-alt="1400" class="is-passed is-here"><span class="s-a">1,400</span> <span class="s-n">Kathmandu</span></li>
+      <li data-alt="2846"><span class="s-a">2,846</span> <span class="s-n">Lukla</span></li>
+      <li data-alt="3440"><span class="s-a">3,440</span> <span class="s-n">Namche Bazaar</span></li>
+      <li data-alt="3867"><span class="s-a">3,867</span> <span class="s-n">Tengboche</span></li>
+      <li data-alt="5364"><span class="s-a">5,364</span> <span class="s-n">Base Camp</span></li>
+      <li data-alt="5644"><span class="s-a">5,644</span> <span class="s-n">Kala Patthar</span></li>
+      <li data-alt="7906"><span class="s-a">7,906</span> <span class="s-n">South Col</span></li>
+      <li data-alt="8848.86"><span class="s-a">8,848.86</span> <span class="s-n">Sagarmatha</span></li>
+    </ol>
+  </aside>
+
   <section class="block hero" data-hero>
-    <aside class="note keep"><span class="alt" data-station>1,400 m<br>Kathmandu</span></aside>
+    <aside class="note titleblock">Sheet 1 of 1<br>Sagarmatha, 34.56 km square<br>SRTM 1 arc-second, 135 m per cell<br>Contours 40 m, index 200 m<br>Surveyed by the ones who stayed</aside>
     <p class="dateline">Kathmandu, 2083 BS</p>
     <h1 class="display" data-reveal>Say it out loud.</h1>
     <p class="deck">For the 2,300 leaving today and the one still deciding.</p>
@@ -149,7 +165,7 @@
   <hr class="rule">
 
   <section class="block door" id="door">
-    <aside class="note keep"><span class="alt">8,848.86 m<br>Sagarmatha</span></aside>
+    <aside class="note keep spot"><span class="alt">Spot height<br>8,848.86 m<br>Sagarmatha</span></aside>
     <p class="lead">Write back.</p>
     <p>You're building something, backing something, or done watching from the sidelines. One message is where it starts. It reaches Zens and nobody else.</p>
 

@@ -47,12 +47,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 em { font-style: italic; }
 
 /* ---------- the massif ---------- */
-#plate {
-  position: fixed; inset: 0; width: 100%; height: 100vh; height: 100svh; z-index: 0;
-  object-fit: cover; object-position: 50% 12%; pointer-events: none; opacity: 1;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0, rgba(0,0,0,.35) 38%, transparent 62%);
-          mask-image: linear-gradient(to bottom, #000 0, rgba(0,0,0,.35) 38%, transparent 62%);
-}
 #massif, #massif-still {
   position: fixed; inset: 0; width: 100%; height: 100vh; height: 100svh; z-index: 0;
   pointer-events: none; object-fit: cover; opacity: 0; transition: opacity 600ms var(--ease);
@@ -61,28 +55,15 @@ em { font-style: italic; }
 #massif[hidden] { display: none; }
 /* desktop: contours only where the text is not; the window right of the column */
 @media (min-width: 768px) {
-  #plate {
-    object-position: 62% 8%;
-    -webkit-mask-image: linear-gradient(to bottom, #000 0, rgba(0,0,0,.4) 40%, transparent 66%), linear-gradient(to right, transparent 0, transparent 52vw, #000 72vw);
-            mask-image: linear-gradient(to bottom, #000 0, rgba(0,0,0,.4) 40%, transparent 66%), linear-gradient(to right, transparent 0, transparent 52vw, #000 72vw);
-    -webkit-mask-composite: source-in; mask-composite: intersect;
-  }
-  #massif, #massif-still {
+  #massif-still {
     -webkit-mask-image: linear-gradient(to right, transparent 0, transparent 64vw, #000 76vw);
     mask-image: linear-gradient(to right, transparent 0, transparent 64vw, #000 76vw);
-    -webkit-mask-size: 300% 100%; mask-size: 300% 100%;
-    -webkit-mask-position: 0 0; mask-position: 0 0;
-    transition: opacity 600ms var(--ease), -webkit-mask-position 700ms var(--ease), mask-position 700ms var(--ease);
-  }
-  body.is-moment #massif, body.is-moment #massif-still {
-    -webkit-mask-position: 50% 0; mask-position: 50% 0;   /* slides the mask 100vw left: the massif fills the screen */
   }
 }
 /* phone: under the text, faint; louder at the three moments and the door */
+/* phone: the shader carries the ink level, the canvas stays at full opacity */
 @media (max-width: 767px) {
-  #massif.is-ready { opacity: 0.16; }
-  body.is-moment #massif.is-ready { opacity: 0.9; }
-  #massif-still:not([hidden]) { opacity: 0.16; }
+  #massif-still:not([hidden]) { opacity: 0.18; }
 }
 
 /* ---------- the bar ---------- */
@@ -95,9 +76,13 @@ em { font-style: italic; }
 .mark { font-size: var(--r2); line-height: 1; text-decoration: none; letter-spacing: -0.01em; padding: 11px 0; }
 .slash { color: var(--brick); }
 .readout { font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.08em; color: var(--cream-60); font-variant-numeric: tabular-nums; }
-.readout.is-summit { color: var(--brick); }
+[data-readout] { transition: color var(--t1) var(--ease); }
+[data-readout].is-summit { color: var(--brick); }
 .readout-bar { display: none; }
-@media (max-width: 767px) { .readout-bar { display: inline; } }
+@media (max-width: 767px) {
+  .readout-bar { display: flex; flex-direction: column; align-items: center; line-height: 1.2; letter-spacing: 0.06em; }
+  .readout-station { font-size: 11px; color: #6b6862; transition: color var(--t1) var(--ease); }
+}
 @media (hover: none) { body.is-typing .bar { transform: translateY(-100%); transition: transform var(--t2) var(--ease); } }
 
 /* ---------- the sheet ---------- */
@@ -107,6 +92,14 @@ em { font-style: italic; }
 .block > p:last-child { margin-bottom: 0; }
 .rule { border: 0; height: 1px; background: var(--hairline); margin: 0; max-width: var(--col); }
 @media (min-width: 1000px) {
+  /* the sheet's panel edge: one hairline down the document, notes hung off it */
+  .sheet::before { content: ""; position: absolute; top: 0; bottom: 0; left: 196px; width: 1px; background: var(--hairline); }
+  .titleblock { position: absolute; left: -220px; top: 0; width: 164px; text-align: right; line-height: 1.7; }
+  .rule { position: relative; margin-left: 220px; width: 640px; max-width: none; }
+  .rule::before, .rule::after { content: ""; position: absolute; top: -3px; width: 1px; height: 7px; background: var(--line-tick, #3a3937); }
+  .rule::before { left: 0; }
+  .rule::after { right: 0; }
+
   .sheet { padding-left: 0; }
   .block, .rule { margin-left: calc((100% - var(--frame)) / 2 + 220px); }
   .sheet { padding-left: var(--s3); padding-right: var(--s3); }
@@ -118,12 +111,30 @@ em { font-style: italic; }
   font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.04em; line-height: 1.5; color: var(--cream-60);
   margin: 0 0 var(--s2);
 }
-.note .alt { letter-spacing: 0.04em; }
 @media (min-width: 1000px) {
-  .note { position: absolute; left: -220px; width: 172px; margin: 0; padding-top: 0.35em; }
-  .note:has(.alt) { position: sticky; top: calc(var(--bar) + var(--s3)); float: left; margin-left: -220px; }
+  .note { position: absolute; left: -220px; width: 164px; text-align: right; margin: 0; padding-top: 0.35em; transition: opacity var(--t1) var(--ease); }
+  .note.is-yield { opacity: 0; }
 }
-@media (max-width: 999px) { .note:not(.keep) { display: none; } }
+/* on phones every note becomes one mono line above the paragraph it annotates */
+@media (max-width: 999px) {
+  .note { font-size: 12px; letter-spacing: 0.03em; line-height: 1.45; margin: 0 0 6px; max-width: 48ch; hyphens: none; -webkit-hyphens: none; }
+}
+
+/* the climb: which stations the reader has passed, in the margin. Mono, quiet, one 150ms fade. */
+.climb { display: none; }
+@media (min-width: 1000px) {
+  .climb {
+    display: block; position: sticky; top: calc(100svh - 176px); width: 172px; height: 0; z-index: 2;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em; line-height: 1.42;
+  }
+}
+.readout-margin { margin: 0 0 10px; }
+.stations { list-style: none; margin: 0; padding: 0; }
+.stations li { display: flex; gap: 8px; white-space: nowrap; color: #1a1a19; transition: color var(--t1) var(--ease); }
+.stations .s-a { font-variant-numeric: tabular-nums; min-width: 58px; text-align: right; }
+.stations li.is-passed { color: var(--cream-60); }
+.stations li.is-here { color: var(--cream); }
+.stations li.is-here .s-a { color: var(--brick); }
 
 /* type roles */
 .dateline { font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cream-60); margin: 0 0 var(--s4); }
@@ -191,7 +202,7 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 /* sign-off and footer */
 .signoff { padding-top: var(--s6); }
 .block > .sign { margin: 0 0 4px; }
-.sign[lang="ne"] { font-size: 0.95em; }
+.sign[lang="ne"] { font-family: "Noto Serif Devanagari", "Kohinoor Devanagari", Mangal, serif; font-size: 0.92em; line-height: 1.5; }
 .foot { position: relative; z-index: 1; max-width: var(--frame); margin: 0 auto; padding: var(--s7) var(--s3) calc(var(--s6) + env(safe-area-inset-bottom)); font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.04em; line-height: 1.7; color: var(--cream-60); }
 .foot p { margin: 0; max-width: var(--col); }
 .foot a { display: inline-block; padding: 12px 0; margin: -12px 0; }
@@ -201,7 +212,6 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 @media (max-width: 767px) {
   :root { --air: 40px; --air-big: 48px; }
   body { line-height: 1.6; }
-  .hero .note:has(.alt) { display: none; }
   body { hyphens: auto; -webkit-hyphens: auto; }
   .moment { min-height: 0; padding: var(--s4) 0; }
   .moment.summit { min-height: 50svh; padding: var(--s5) 0; }

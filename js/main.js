@@ -1,8 +1,9 @@
 // n/acc page behaviour. The page reads fully with this file missing.
 //   #massif            the terrain canvas (fixed, behind the sheet); #massif-still is the no-WebGL / reduced-motion still.
-//   #altitude          mono readout; [data-station] the margin station in the hero.
-//   #getup             the "Get up." block: the altitude reaches 8,848.86 m when it is centred.
-//   [data-moment]      the three break blocks: while one is in view the massif fills the screen.
+//   [data-readout]     the mono altitude, in the bar on phones and in the left margin on desktop.
+//   [data-climb]       the station ladder in the left margin; each station lights as the reader passes its altitude.
+//   #getup             the "Get up." block: the altitude reaches 8,848.86 m as the line centres.
+//   [data-moment]      the three break blocks: the shader mask opens across the whole canvas and closes again.
 //   [data-reveal]      the three break lines, revealed once.
 //   form#door-form     posts JSON to the mail Worker; falls back to a plain POST without JS.
 //   [data-nav]         the bar; gets .is-on after the hero scrolls out.
@@ -21,69 +22,148 @@ const BASE = 1400, SUMMIT = 8848.86;
 const STATIONS = [[1400, 'Kathmandu'], [2846, 'Lukla'], [3440, 'Namche Bazaar'], [3867, 'Tengboche'], [5364, 'Base Camp'], [5644, 'Kala Patthar'], [7906, 'South Col'], [8848.86, 'Sagarmatha']];
 const fmt = (m) => (m >= SUMMIT - 1 ? '8,848.86' : Math.round(m).toLocaleString('en-US')) + ' m';
 
+// ink levels: reading state, and the level the mask moments open to
+const INK = mobile ? { rest: 0.10, open: 0.34 } : { rest: 0.45, open: 0.34 };
+
 // ---------- bar ----------
 const nav = $('[data-nav]');
 const hero = $('[data-hero]');
 if (nav && hero) new IntersectionObserver((e) => nav.classList.toggle('is-on', !e[0].isIntersecting), { rootMargin: '-80px 0px 0px 0px' }).observe(hero);
 $$('a[href="#door"]').forEach((a) => a.addEventListener('click', (e) => { const d = $('#door'); if (!d) return; e.preventDefault(); d.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); history.replaceState(null, '', '#door'); }));
 
-// ---------- altitude: one number for the readout, the red contour and the camera ----------
-const readout = $('#altitude');
-const station = $('[data-station]');
+// ---------- altitude: one number for the readout, the ladder, the red ring and the camera ----------
+const readouts = $$('[data-readout]');
+const readoutStation = $('[data-readout-station]');
+const climbRows = $$('[data-alt]');
 const getup = $('#getup');
 const canvas = $('#massif');
 const still = $('#massif-still');
 const plate = $('#plate');
-let target = BASE, shown = BASE, terrain = null, raf = 0;
+let target = BASE, shown = BASE, terrain = null, raf = 0, hereIdx = -1;
 
+// The summit lands as "Get up." centres. The raw scroll target arrives a fraction early so the
+// per-frame lerp finishes on the same beat the line reveals.
+function scrollEnd() {
+  if (!getup) return 1;
+  const r = getup.getBoundingClientRect();
+  const centre = r.top + window.scrollY + r.height / 2;
+  return Math.max(1, centre - 0.56 * innerHeight);
+}
 function targetAltitude() {
-  if (!getup) return BASE;
-  const top = getup.getBoundingClientRect().top + window.scrollY;
-  const end = top + getup.offsetHeight / 2 - innerHeight / 2;
-  const p = Math.max(0, Math.min(1, window.scrollY / Math.max(1, end)));
+  const p = Math.max(0, Math.min(1, window.scrollY / scrollEnd()));
   return BASE + (SUMMIT - BASE) * p;
 }
 function paint(alt) {
   const atTop = alt >= SUMMIT - 1;
-  if (readout) { readout.textContent = fmt(alt); readout.classList.toggle('is-summit', atTop); }
-  if (plate) plate.style.opacity = String(Math.max(0, Math.min(1, 1 - (alt - BASE) / 1900)));
-  if (station) {
-    const near = STATIONS.find(([m]) => Math.abs(m - alt) < 60);
-    station.innerHTML = fmt(alt) + '<br>' + (near ? near[1] : '&nbsp;');
-    station.classList.toggle('is-summit', atTop);
+  const txt = fmt(alt);
+  readouts.forEach((el) => { el.textContent = txt; el.classList.toggle('is-summit', atTop); });
+
+  // the climb: every station the reader has passed stays legible, the current one is cream
+  let idx = -1;
+  for (let i = 0; i < STATIONS.length; i++) if (alt >= STATIONS[i][0] - 1) idx = i;
+  if (idx !== hereIdx) {
+    hereIdx = idx;
+    climbRows.forEach((li, i) => {
+      li.classList.toggle('is-passed', i <= idx);
+      li.classList.toggle('is-here', i === idx);
+    });
+    if (readoutStation) readoutStation.textContent = idx >= 0 ? STATIONS[idx][1] : '';
   }
+  if (plate) plate.style.opacity = String(Math.max(0, Math.min(1, 1 - (alt - BASE) / 1900)));
   if (terrain) { terrain.setAltitude(alt); terrain.setProgress((alt - BASE) / (SUMMIT - BASE)); }
 }
 function tick() {
   const d = target - shown;
-  if (Math.abs(d) < 0.5) { shown = target; paint(shown); raf = 0; return; }
+  if (Math.abs(d) < 0.4) { shown = target; paint(shown); raf = 0; return; }
   shown += d * (reduced ? 1 : 0.12);
   paint(shown);
   raf = requestAnimationFrame(tick);
 }
-function onScroll() { target = targetAltitude(); if (!raf) raf = requestAnimationFrame(tick); }
+// The ladder owns a band at the bottom of the margin. A note that crosses it steps aside for the
+// 200px it takes to pass, so the survey column never sets two texts on top of each other.
+const notes = $$('.note');
+const climb = $('[data-climb]');
+function guardNotes() {
+  if (!climb || innerWidth < 1000) return;
+  const top = climb.getBoundingClientRect().top - 6;
+  const bottom = top + 188;
+  notes.forEach((n) => {
+    const r = n.getBoundingClientRect();
+    n.classList.toggle('is-yield', r.bottom > top && r.top < bottom);
+  });
+}
+function onScroll() { target = targetAltitude(); guardNotes(); if (!raf) raf = requestAnimationFrame(tick); }
 addEventListener('scroll', onScroll, { passive: true });
-addEventListener('resize', onScroll);
+
+// ---------- the mask: contours stop at the reading column, measured from the column's real right edge ----------
+const columnEl = $('.block');
+let maskRest = [-2, -1.9];
+function measureMask() {
+  if (!columnEl || innerWidth < 768) { maskRest = [-2, -1.9]; }
+  else {
+    const right = columnEl.getBoundingClientRect().right;
+    maskRest = [(right - 24) / innerWidth, (right + 120) / innerWidth];
+  }
+  if (terrain && !maskOpen) terrain.setMask(maskRest[0], maskRest[1]);
+}
+let maskOpen = 0;
+function applyMask() {
+  if (!terrain) return;
+  const l = maskRest[0] + (-1.0 - maskRest[0]) * maskOpen;
+  const r = maskRest[1] + (-0.9 - maskRest[1]) * maskOpen;
+  terrain.setMask(l, r);
+  terrain.setInk(INK.rest + (INK.open - INK.rest) * maskOpen);
+  terrain.setGhostBoost(0.42 * maskOpen);
+}
+addEventListener('resize', () => { measureMask(); applyMask(); onScroll(); });
+measureMask();
 onScroll();
 if (reduced) { shown = target; paint(shown); }
 
-// the three moments: the massif fills the screen while a break line is in view
+// ---------- the three moments and the break lines ----------
 const moments = $$('[data-moment]');
-if (moments.length) {
+const reveals = $$('[data-reveal]');
+
+function plainMoments() {
+  // no GSAP: an IntersectionObserver opens the mask in one 500ms step instead of scrubbing it
+  if (!moments.length) return;
+  let raf2 = 0, want = 0;
+  const step = () => {
+    const d = want - maskOpen;
+    if (Math.abs(d) < 0.005) { maskOpen = want; applyMask(); raf2 = 0; return; }
+    maskOpen += d * 0.18; applyMask(); raf2 = requestAnimationFrame(step);
+  };
   const io = new IntersectionObserver((entries) => {
     entries.forEach((e) => { e.target.__in = e.isIntersecting; });
-    document.body.classList.toggle('is-moment', moments.some((m) => m.__in));
-  }, { rootMargin: '-20% 0px -20% 0px', threshold: 0 });
+    want = moments.some((m) => m.__in) ? 1 : 0;
+    if (reduced) { maskOpen = want; applyMask(); return; }
+    if (!raf2) raf2 = requestAnimationFrame(step);
+  }, { rootMargin: '-18% 0px -18% 0px', threshold: 0 });
   moments.forEach((m) => io.observe(m));
 }
 
-// the break lines: masked line reveal with GSAP when it is there, a plain fade otherwise
-const reveals = $$('[data-reveal]');
 function plainReveal() {
   if (reduced) return reveals.forEach((el) => el.classList.add('is-in'));
   const io = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -15% 0px' });
   reveals.forEach((el) => io.observe(el));
 }
+
+function richMoments() {
+  // Each moment scrubs the shader mask open across the whole canvas and closed again.
+  // The summit holds open in the middle so the last one culminates instead of passing.
+  moments.forEach((m) => {
+    const proxy = { v: 0 };
+    const summit = m.id === 'getup';
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: m, start: 'top 75%', end: 'bottom 25%', scrub: 0.6 },
+      onUpdate: () => { maskOpen = proxy.v; applyMask(); },
+    });
+    tl.to(proxy, { v: 1, duration: 1, ease: 'none' });
+    if (summit) tl.to(proxy, { v: 1, duration: 0.9, ease: 'none' });
+    tl.to(proxy, { v: 0, duration: 1, ease: 'none' });
+  });
+}
+
 function richReveal() {
   gsap.registerPlugin(ScrollTrigger, SplitText);
   if (window.Lenis) {
@@ -94,16 +174,27 @@ function richReveal() {
     document.documentElement.classList.add('lenis');
     window.__qaSettle = () => new Promise((r) => setTimeout(r, 700));
   }
+  richMoments();
   document.fonts.ready.then(() => {
     reveals.forEach((el) => {
       el.classList.add('is-in');
+      // "Get up." lands as the number lands: its own trigger is the block's centre, not its top
+      const summit = el.classList.contains('getup');
+      const st = summit
+        ? { trigger: el, start: 'center 52%', once: true }
+        : { trigger: el, start: 'top 88%', once: true };
       SplitText.create(el, { type: 'lines', mask: 'lines', autoSplit: true, aria: 'none', onSplit: (s) =>
-        gsap.from(s.lines, { yPercent: 108, duration: 0.85, stagger: 0.07, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%', once: true } }) });
+        gsap.from(s.lines, { yPercent: 108, duration: summit ? 0.7 : 0.85, stagger: 0.07, ease: 'expo.out', scrollTrigger: st }) });
     });
+    ScrollTrigger.refresh();
   });
 }
-addEventListener('load', () => { (!reduced && window.gsap && window.SplitText) ? richReveal() : plainReveal(); });
-if (reduced) plainReveal();
+
+addEventListener('load', () => {
+  if (!reduced && window.gsap && window.ScrollTrigger && window.SplitText) richReveal();
+  else { plainReveal(); plainMoments(); }
+});
+if (reduced) { plainReveal(); plainMoments(); }
 
 // ---------- terrain ----------
 async function startTerrain() {
@@ -114,9 +205,15 @@ async function startTerrain() {
     const t0 = performance.now();
     terrain = await initTerrain({ canvas, mobile });
     if (performance.now() - t0 > 4000) { terrain.destroy(); terrain = null; return useStill(); }
+    measureMask();
+    applyMask();
     paint(shown);
     canvas.classList.add('is-ready');
-    if (!mobile) addEventListener('pointermove', (e) => terrain && terrain.setPointer((e.clientX / innerWidth - 0.5) * 2, (e.clientY / innerHeight - 0.5) * -2), { passive: true });
+    // the plate stays: it is the hero's photograph and it hands over to the survey as the reader climbs
+    window.__terrain = terrain;                      // QA handle only
+    if (!mobile && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      addEventListener('pointermove', (e) => terrain && terrain.setPointer((e.clientX / innerWidth - 0.5) * 2, (e.clientY / innerHeight - 0.5) * -2), { passive: true });
+    }
     addEventListener('pagehide', () => terrain && terrain.destroy(), { once: true });
   } catch (err) { useStill(); }
 }
@@ -143,12 +240,12 @@ if (form) {
     if (data.message.trim().length < 10) return 'message';
     return null;
   };
+  const read = () => { const d = Object.fromEntries(new FormData(form).entries()); ['name', 'email', 'reason', 'message', 'website'].forEach((k) => { d[k] = String(d[k] || ''); }); return d; };
   $$('input, select, textarea', form).forEach((el) => {
     el.addEventListener('blur', () => { if (form.dataset.tried) { const bad = check(read()); if (bad !== el.name) el.classList.remove('is-invalid'); } });
     el.addEventListener('focus', () => document.body.classList.add('is-typing'));
     el.addEventListener('blur', () => document.body.classList.remove('is-typing'));
   });
-  const read = () => { const d = Object.fromEntries(new FormData(form).entries()); ['name', 'email', 'reason', 'message', 'website'].forEach((k) => { d[k] = String(d[k] || ''); }); return d; };
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     form.dataset.tried = '1';
