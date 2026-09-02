@@ -133,8 +133,10 @@ h1.display { margin: 0 0 var(--s3); }
 .moment.summit { min-height: 100vh; min-height: 100svh; }
 .moment.summit .break { font-size: clamp(88px, 6rem + 6vw, 200px); max-width: none; }
 @media (min-width: 1000px) { .moment { margin-left: 220px; } }
-[data-reveal] { opacity: 0; transform: translateY(12px); transition: opacity var(--t3) var(--ease), transform var(--t3) var(--ease); }
-[data-reveal].is-in { opacity: 1; transform: none; }
+html.lenis, html.lenis body { height: auto; }
+/* hidden only once JS has taken charge, so the text is readable with no JS */
+html.js [data-reveal]:not(.is-in) { opacity: 0; transform: translateY(12px); }
+[data-reveal] { transition: opacity var(--t3) var(--ease), transform var(--t3) var(--ease); }
 
 /* ---------- the door ---------- */
 .door { padding-top: var(--air-big); }

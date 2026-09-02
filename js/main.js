@@ -15,6 +15,7 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const mobile = matchMedia('(max-width: 767px)').matches;
 const lowEnd = (navigator.deviceMemory || 8) <= 2 || (navigator.connection && navigator.connection.saveData);
 const no3d = new URLSearchParams(location.search).has('no3d');
+if (!reduced) document.documentElement.classList.add('js');
 
 const BASE = 1400, SUMMIT = 8848.86;
 const STATIONS = [[1400, 'Kathmandu'], [2846, 'Lukla'], [3440, 'Namche Bazaar'], [3867, 'Tengboche'], [5364, 'Base Camp'], [5644, 'Kala Patthar'], [7906, 'South Col'], [8848.86, 'Sagarmatha']];
@@ -73,13 +74,33 @@ if (moments.length) {
   moments.forEach((m) => io.observe(m));
 }
 
-// the break lines, once
+// the break lines: masked line reveal with GSAP when it is there, a plain fade otherwise
 const reveals = $$('[data-reveal]');
-if (reduced) reveals.forEach((el) => el.classList.add('is-in'));
-else {
+function plainReveal() {
+  if (reduced) return reveals.forEach((el) => el.classList.add('is-in'));
   const io = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -15% 0px' });
   reveals.forEach((el) => io.observe(el));
 }
+function richReveal() {
+  gsap.registerPlugin(ScrollTrigger, SplitText);
+  if (window.Lenis) {
+    const lenis = new Lenis({ lerp: 0.11 });
+    lenis.on('scroll', () => { ScrollTrigger.update(); onScroll(); });
+    gsap.ticker.add((t) => lenis.raf(t * 1000));
+    gsap.ticker.lagSmoothing(0);
+    document.documentElement.classList.add('lenis');
+    window.__qaSettle = () => new Promise((r) => setTimeout(r, 700));
+  }
+  document.fonts.ready.then(() => {
+    reveals.forEach((el) => {
+      el.classList.add('is-in');
+      SplitText.create(el, { type: 'lines', mask: 'lines', autoSplit: true, onSplit: (s) =>
+        gsap.from(s.lines, { yPercent: 108, duration: 0.85, stagger: 0.07, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%', once: true } }) });
+    });
+  });
+}
+addEventListener('load', () => { (!reduced && window.gsap && window.SplitText) ? richReveal() : plainReveal(); });
+if (reduced) plainReveal();
 
 // ---------- terrain ----------
 async function startTerrain() {
