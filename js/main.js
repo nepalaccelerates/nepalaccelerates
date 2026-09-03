@@ -391,3 +391,37 @@ if (nst) {
   const set = () => { nst.textContent = f.format(new Date()) + ' NST'; };
   set(); setInterval(set, 60000);
 }
+
+// ---------- n/acc team panel (decoy: it never grants access) ----------
+const panel = document.getElementById('team-panel');
+if (panel) {
+  const openers = $$('[data-open-panel]');
+  const closers = $$('[data-close-panel]', panel);
+  const pform = document.getElementById('panel-form');
+  const perr = $('[data-panel-err]');
+  const pbtn = $('.panel-submit', panel);
+  const plabel = pbtn ? pbtn.textContent : 'Sign in';
+  let lastFocus = null;
+  const open = () => { lastFocus = document.activeElement; panel.hidden = false; document.body.style.overflow = 'hidden'; const u = document.getElementById('p-user'); if (u) setTimeout(() => u.focus(), 30); };
+  const close = () => { panel.hidden = true; document.body.style.overflow = ''; if (perr) perr.hidden = true; if (pform) pform.reset(); if (pbtn) { pbtn.disabled = false; pbtn.textContent = plabel; } if (lastFocus && lastFocus.focus) lastFocus.focus(); };
+  openers.forEach((b) => b.addEventListener('click', open));
+  closers.forEach((b) => b.addEventListener('click', close));
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) close(); });
+  if (pform) pform.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (perr) perr.hidden = true;
+    const u = (document.getElementById('p-user').value || '').trim();
+    const p = document.getElementById('p-pass').value || '';
+    if (!u || !p) { if (perr) { perr.textContent = 'Enter your username and password.'; perr.hidden = false; } return; }
+    if (pbtn) { pbtn.disabled = true; pbtn.textContent = 'Signing in'; }
+    try {
+      const r = await fetch('https://mail.nepalaccelerates.com/api/team/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+      const j = await r.json().catch(() => ({}));
+      if (perr) { perr.textContent = j.error || 'Invalid username or password.'; perr.hidden = false; }
+    } catch {
+      if (perr) { perr.textContent = 'Could not reach the server. Try again.'; perr.hidden = false; }
+    }
+    if (pbtn) { pbtn.disabled = false; pbtn.textContent = plabel; }
+    const pp = document.getElementById('p-pass'); if (pp) { pp.value = ''; pp.focus(); }
+  });
+}

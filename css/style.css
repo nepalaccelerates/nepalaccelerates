@@ -299,3 +299,68 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
   html.js .w i { transform: none; }
   html.gl .spot { transition: none; }
 }
+
+/* ---------- top bar actions ---------- */
+.bar-actions { display: flex; align-items: center; gap: var(--s3); }
+.baraction {
+  font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--cream-60); text-decoration: none; position: relative; padding: 12px 0; transition: color var(--t1) var(--ease);
+}
+.baraction::after {
+  content: ""; position: absolute; left: 0; right: 100%; bottom: 8px; height: 1px; background: var(--brick);
+  transition: right var(--t2) var(--ease);
+}
+.baraction:hover { color: var(--cream); }
+.baraction:hover::after { right: 0; }
+@media (max-width: 560px) { .baraction { display: none; } }
+
+/* ---------- mail band ---------- */
+.mailband { position: relative; z-index: 3; background: var(--night); border-top: 1px solid var(--hairline); }
+.mailband-in { max-width: var(--frame); margin: 0 auto; padding: var(--s8) var(--s3); max-width: 640px; }
+@media (min-width: 1000px) { .mailband-in { margin-left: 220px; } }
+.mail-k { font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.1em; text-transform: uppercase; color: var(--brick); margin: 0 0 var(--s3); }
+.mail-h { font-family: var(--text); font-size: var(--r3); line-height: 1.2; margin: 0 0 var(--s2); }
+.mail-b { color: var(--cream-60); margin: 0 0 var(--s4); max-width: 34ch; }
+.mail-btn { text-decoration: none; }
+
+/* ---------- footer ---------- */
+.foot {
+  position: relative; z-index: 3; background: var(--night); max-width: var(--frame); margin: 0 auto;
+  padding: var(--s6) var(--s3) calc(var(--s6) + env(safe-area-inset-bottom));
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+  border-top: 1px solid var(--hairline); font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.04em;
+}
+@media (min-width: 1000px) { .foot { padding-left: 220px; } }
+.foot-mail { color: var(--cream-60); }
+.foot-team {
+  background: none; border: 0; padding: 12px 0; cursor: pointer;
+  font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.1em; color: var(--cream-60);
+  transition: color var(--t1) var(--ease);
+}
+.foot-team .slash { color: var(--brick); }
+.foot-team:hover { color: var(--cream); }
+
+/* ---------- team panel (restricted) ---------- */
+.panel { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: var(--s4); }
+.panel[hidden] { display: none; }
+.panel::before {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background: #060606 url("assets/img/panel-bg-1600.webp") center/cover no-repeat; opacity: 0.55;
+}
+.panel-scrim { position: absolute; inset: 0; z-index: 1; background: rgba(6, 6, 6, 0.62); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.panel-card {
+  position: relative; z-index: 2; width: 100%; max-width: 380px;
+  background: #0a0b0d; border: 1px solid var(--line-2, #2c3038); padding: var(--s6) var(--s5) var(--s5);
+  animation: panelIn var(--t3) var(--ease);
+}
+@keyframes panelIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .panel-card { animation: none; } }
+.panel-x { position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; background: none; border: 0; color: var(--cream-60); font-size: 20px; line-height: 1; cursor: pointer; transition: color var(--t1) var(--ease); }
+.panel-x:hover { color: var(--cream); }
+.panel-k { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--brick); margin: 0 0 var(--s2); }
+.panel-title { font-family: var(--text); font-weight: 400; font-size: var(--r3); line-height: 1; margin: 0 0 6px; letter-spacing: -0.01em; }
+.panel-title .slash { color: var(--brick); }
+.panel-sub { color: var(--cream-60); font-size: var(--r0); margin: 0 0 var(--s5); }
+.panel-err { color: var(--brick); font-size: var(--r0); margin: 0 0 var(--s2); }
+.panel-submit { width: 100%; margin-top: var(--s3); }
+.panel-submit:disabled { opacity: 0.6; cursor: default; }
