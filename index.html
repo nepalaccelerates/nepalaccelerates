@@ -67,7 +67,7 @@
   <nav class="nav-links" aria-label="Primary">
     <a class="navlink" href="https://mail.nepalaccelerates.com">Mail</a>
     <a class="navlink" href="#door">Write back</a>
-    <button class="navlink navlink-btn" type="button" data-open-panel>Team</button>
+    <button class="navlink navlink-btn" type="button" data-open-panel>Portal</button>
   </nav>
 </header>
 
@@ -245,8 +245,11 @@
 </main>
 
 <footer class="foot">
-  <a class="foot-inv" href="https://mail.nepalaccelerates.com">Take your own name on the domain. name@nepalaccelerates.com, run by us, no one in the middle.</a>
-  <a class="foot-mail" href="mailto:hello@nepalaccelerates.com">hello@nepalaccelerates.com</a>
+  <div class="foot-stack">
+    <a class="foot-inv" href="https://mail.nepalaccelerates.com">Take your own name on the domain. name@nepalaccelerates.com, run by us, no one in the middle.</a>
+    <a class="foot-mail" href="mailto:hello@nepalaccelerates.com">hello@nepalaccelerates.com</a>
+  </div>
+  <a class="foot-mark" href="/" aria-hidden="true" tabindex="-1">n<span class="slash">/</span>acc</a>
 </footer>
 
 <div class="panel" id="team-panel" hidden>
@@ -271,10 +274,12 @@
   </div>
 </div>
 
+<!-- main runs first (it is deferred like the rest, and deferred scripts run in document order): the survey
+     intro and the terrain boot must not wait on GSAP or Lenis, which are only touched later, on load. -->
+<script type="module" src="js/main.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/gsap.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/ScrollTrigger.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.15.0/SplitText.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js" defer></script>
-<script type="module" src="js/main.js"></script>
 </body>
 </html>

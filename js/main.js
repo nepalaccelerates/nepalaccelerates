@@ -24,7 +24,7 @@ const STATIONS = [[1400, 'Kathmandu'], [2846, 'Lukla'], [3440, 'Namche Bazaar'],
 const fmt = (m) => (m >= SUMMIT - 1 ? '8,848.86' : Math.round(m).toLocaleString('en-US')) + ' m';
 
 // ink levels: the hero owns the sheet, the letter takes it back, the mask moments open it again
-const INK = mobile ? { hero: 0.82, rest: 0.12, open: 0.34 } : { hero: 0.82, rest: 0.46, open: 0.34 };
+const INK = mobile ? { hero: 0.82, rest: 0.18, open: 0.5 } : { hero: 0.82, rest: 0.64, open: 0.56 };
 
 // ---------- the headline. Never gated on a GPU, on fonts, or on idle time. ----------
 const words = $$('.hero-sheet .w i');

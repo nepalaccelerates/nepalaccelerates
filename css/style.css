@@ -264,9 +264,9 @@ h1.display { margin: 0 0 var(--s3); }
 .small { font-size: var(--r0); line-height: 1.5; color: var(--cream-60); }
 
 /* the three moments: one line, the massif behind everything */
-.moment { position: relative; padding: var(--air-big) 0; min-height: 60vh; min-height: 60svh; display: flex; align-items: center; }
+.moment { position: relative; padding: var(--s6) 0; min-height: 40vh; min-height: 40svh; display: flex; align-items: center; }
 .moment .break { max-width: 14ch; }
-.moment.summit { min-height: 100vh; min-height: 100svh; }
+.moment.summit { min-height: 56vh; min-height: 56svh; }
 .moment.summit .break { font-size: clamp(88px, 6rem + 6vw, 200px); max-width: none; }
 @media (min-width: 1000px) { .moment { margin-left: 220px; } }
 html.lenis, html.lenis body { height: auto; }
@@ -275,7 +275,7 @@ html.js [data-reveal]:not(.is-in) { opacity: 0; transform: translateY(12px); }
 [data-reveal] { transition: opacity var(--t3) var(--ease), transform var(--t3) var(--ease); }
 
 /* ---------- the door ---------- */
-.door { padding-top: var(--air-big); }
+.door { padding-top: var(--s6); }
 .field { display: flex; flex-direction: column; gap: var(--s1); margin: 0 0 var(--s3); }
 .field label { font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cream-60); }
 .hint { font-size: var(--r0); color: var(--cream-60); margin: -4px 0 4px; }
@@ -316,7 +316,6 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 .signoff { padding-top: var(--s6); }
 .block > .sign { margin: 0 0 4px; }
 .sign[lang="ne"] { font-family: "Noto Serif Devanagari", "Kohinoor Devanagari", Mangal, serif; font-size: 0.92em; line-height: 1.5; }
-.foot { position: relative; z-index: 1; max-width: var(--frame); margin: 0 auto; padding: var(--s7) var(--s3) calc(var(--s6) + env(safe-area-inset-bottom)); font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.04em; line-height: 1.7; color: var(--cream-60); }
 .foot p { margin: 0; max-width: var(--col); }
 .foot a { display: inline-block; padding: 12px 0; margin: -12px 0; }
 @media (min-width: 1000px) { .foot p { margin-left: 220px; } }
@@ -366,14 +365,6 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 .mail-btn { text-decoration: none; }
 
 /* ---------- footer ---------- */
-.foot {
-  position: relative; z-index: 3; background: var(--night); max-width: var(--frame); margin: 0 auto;
-  padding: var(--s6) var(--s3) calc(var(--s6) + env(safe-area-inset-bottom));
-  display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
-  border-top: 1px solid var(--hairline); font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.04em;
-}
-@media (min-width: 1000px) { .foot { padding-left: 220px; } }
-.foot-mail { color: var(--cream-60); }
 .foot-team {
   background: none; border: 0; padding: 12px 0; cursor: pointer;
   font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.1em; color: var(--cream-60);
@@ -425,19 +416,6 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 @media (max-width: 460px) { .bm-stn { display: none; } .benchmark { gap: 8px; } .idx { letter-spacing: 0.1em; } }
 
 /* ---------- footer as a plain-text stack ---------- */
-.foot {
-  position: relative; z-index: 3; background: var(--night); width: 100%;
-  padding: var(--s6) var(--s3) calc(var(--s5) + env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
-  border-top: 1px solid var(--hairline); font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.03em; line-height: 1.5;
-}
-@media (min-width: 1000px) { .foot { padding-left: 220px; } }
-.foot > * { color: var(--cream-60); text-decoration: none; background: none; border: 0; padding: 6px 0; cursor: pointer; font: inherit; text-align: left; min-height: 24px; display: block; }
-.foot-wb { color: var(--cream) !important; font-size: 15px; letter-spacing: 0.02em; }
-.foot-wb:hover, .foot-mail:hover, .foot-inv:hover { color: var(--cream); }
-.foot-inv { max-width: 52ch; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
-.foot-team { margin-top: 8px; letter-spacing: 0.12em; padding: 12px 0; }
-.foot-team:hover { color: var(--cream); }
 
 
 /* ---------- nav links (banger header) ---------- */
@@ -449,7 +427,7 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 }
 .navlink::before { content: ""; position: absolute; left: 0; bottom: 12px; width: 100%; height: 1px; background: var(--hairline); transform: scaleX(1); transform-origin: left; }
 .navlink::after { content: ""; position: absolute; left: 0; bottom: 12px; width: 100%; height: 1px; background: var(--brick); transform: scaleX(0); transform-origin: left; transition: transform var(--t2) var(--ease); }
-.navlink-btn { background: none; border: 0; cursor: pointer; font: inherit; }
+.navlink-btn { background: none; border: 0; cursor: pointer; font-family: var(--mono); font-size: inherit; letter-spacing: inherit; }
 .navlink:hover { color: var(--cream); }
 .navlink:hover::after { transform: scaleX(1); }
 @media (max-width: 620px) {
@@ -459,3 +437,19 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 }
 @media (max-width: 360px) { .nav-links { gap: 12px; } .navlink { letter-spacing: 0.05em; } }
 @media (prefers-reduced-motion: reduce) { .navlink::after { transition: none; } }
+
+/* ---------- footer: full-width band, text left, big mark right ---------- */
+.foot {
+  position: relative; z-index: 3; background: var(--night); width: 100%; max-width: none;
+  padding: var(--s5) var(--s3) calc(var(--s5) + env(safe-area-inset-bottom));
+  display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s5);
+  border-top: 1px solid var(--hairline);
+}
+@media (min-width: 1000px) { .foot { padding-left: 220px; } }
+.foot-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; font-family: var(--mono); font-size: 14px; letter-spacing: 0.02em; line-height: 1.55; }
+.foot-stack a { color: var(--cream-60); text-decoration: none; }
+.foot-stack a:hover { color: var(--cream); }
+.foot-inv { max-width: 44ch; }
+.foot-mark { font-family: var(--text); font-size: clamp(56px, 9vw, 132px); line-height: 0.78; color: var(--cream); text-decoration: none; letter-spacing: -0.03em; flex: none; }
+.foot-mark .slash { color: var(--brick); }
+@media (max-width: 680px) { .foot { flex-direction: column; align-items: flex-start; gap: var(--s4); } .foot-mark { font-size: clamp(72px, 24vw, 104px); } }
