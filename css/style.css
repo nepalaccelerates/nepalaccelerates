@@ -61,6 +61,48 @@ em { font-style: italic; }
    and becomes what it is: the hero's sheet. The letter below it reads on clean night. */
 html:not(.jsr) #massif-still { position: absolute; top: 0; left: 0; height: 100vh; height: 100svh; }
 
+/* ---------- the intro: survey from the valley floor ---------- */
+/* A night veil over the whole page (above the hero at z2, above the bar at z3) with a red survey
+   cross and a mono altitude readout. Only present when the head script armed it; otherwise display:none,
+   so no-JS, reduced motion and repeat visits never see it. The veil opacity is driven by JS on reveal. */
+.intro { position: fixed; inset: 0; z-index: 5; display: none; }
+html.intro-armed .intro { display: block; }
+.intro[hidden] { display: none !important; }
+.intro-veil { position: absolute; inset: 0; background: var(--night); will-change: opacity; }
+.intro-mark {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  text-align: center; will-change: opacity, transform;
+}
+.intro-cross { position: relative; display: block; width: 24px; height: 24px; margin: 0 auto 20px; }
+.intro-cross::before, .intro-cross::after { content: ""; position: absolute; background: var(--brick); }
+.intro-cross::before { left: 0; top: 50%; width: 24px; height: 1px; transform: translateY(-50%); }
+.intro-cross::after { left: 50%; top: 0; width: 1px; height: 24px; transform: translateX(-50%); }
+.intro-read {
+  margin: 0; font-family: var(--mono); font-size: var(--r1); letter-spacing: 0.12em;
+  color: var(--cream); font-variant-numeric: tabular-nums; line-height: 1.4;
+}
+.intro-read b { font-weight: 400; }
+.intro-read s {
+  display: block; margin-top: 8px; text-decoration: none;
+  font-size: var(--r-1); letter-spacing: 0.22em; text-transform: uppercase; color: var(--cream-60);
+}
+.intro-skip {
+  position: absolute; right: var(--s3); bottom: calc(var(--s3) + env(safe-area-inset-bottom));
+  background: none; border: 0; cursor: pointer; padding: 12px;
+  font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--cream-60); transition: color var(--t1) var(--ease);
+}
+.intro-skip:hover { color: var(--cream); }
+@keyframes introPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.28; } }
+.intro-cross { animation: introPulse 1.25s var(--ease) infinite; }
+/* the reveal fades the instrument off fast; the veil itself is walked to zero by JS on the lift */
+.intro-mark, .intro-skip { transition: opacity 260ms var(--ease), transform 260ms var(--ease); }
+.intro.is-revealing .intro-mark { opacity: 0; transform: translate(-50%, -66%); }
+.intro.is-revealing .intro-skip { opacity: 0; }
+.intro.is-revealing .intro-cross { animation: none; }
+/* belt and braces: reduced motion never shows the veil even if the class slips through */
+@media (prefers-reduced-motion: reduce) { .intro { display: none !important; } }
+
 /* ---------- the hero: the survey in motion ---------- */
 .hero-sheet {
   position: relative; z-index: 2;
@@ -384,9 +426,9 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 
 /* ---------- footer as a plain-text stack ---------- */
 .foot {
-  position: relative; z-index: 3; background: var(--night); max-width: var(--frame); margin: 0 auto;
-  padding: var(--s8) var(--s3) calc(var(--s6) + env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+  position: relative; z-index: 3; background: var(--night); width: 100%;
+  padding: var(--s6) var(--s3) calc(var(--s5) + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
   border-top: 1px solid var(--hairline); font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.03em; line-height: 1.5;
 }
 @media (min-width: 1000px) { .foot { padding-left: 220px; } }
@@ -401,13 +443,19 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 /* ---------- nav links (banger header) ---------- */
 .nav-links { margin-left: auto; display: flex; align-items: center; gap: var(--s4); }
 .navlink {
-  position: relative; font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+  position: relative; white-space: nowrap; font-family: var(--mono); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
   color: var(--cream-60); text-decoration: none; padding: 16px 0; min-height: 44px; display: inline-flex; align-items: center;
   transition: color var(--t1) var(--ease);
 }
 .navlink::before { content: ""; position: absolute; left: 0; bottom: 12px; width: 100%; height: 1px; background: var(--hairline); transform: scaleX(1); transform-origin: left; }
 .navlink::after { content: ""; position: absolute; left: 0; bottom: 12px; width: 100%; height: 1px; background: var(--brick); transform: scaleX(0); transform-origin: left; transition: transform var(--t2) var(--ease); }
+.navlink-btn { background: none; border: 0; cursor: pointer; font: inherit; }
 .navlink:hover { color: var(--cream); }
 .navlink:hover::after { transform: scaleX(1); }
-@media (max-width: 460px) { .nav-links { gap: var(--s3); } .navlink { letter-spacing: 0.12em; } }
+@media (max-width: 620px) {
+  .benchmark { display: none; }
+  .nav-links { gap: 16px; }
+  .navlink { letter-spacing: 0.08em; font-size: 11px; padding: 14px 0; }
+}
+@media (max-width: 360px) { .nav-links { gap: 12px; } .navlink { letter-spacing: 0.05em; } }
 @media (prefers-reduced-motion: reduce) { .navlink::after { transition: none; } }

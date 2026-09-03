@@ -28,14 +28,16 @@ const INK = mobile ? { hero: 0.82, rest: 0.12, open: 0.34 } : { hero: 0.82, rest
 
 // ---------- the headline. Never gated on a GPU, on fonts, or on idle time. ----------
 const words = $$('.hero-sheet .w i');
-function revealWords() {
+function revealWords(base = 540) {
   if (reduced) { words.forEach((w) => { w.style.transform = 'none'; }); return; }
   words.forEach((w, i) => w.animate(
     [{ transform: 'translateY(112%)' }, { transform: 'translateY(0)' }],
-    { duration: 500, delay: 540 + i * 50, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'both' },
+    { duration: 500, delay: base + i * 50, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'both' },
   ));
 }
-addEventListener('load', revealWords);
+// when the intro plays it knocks the headline up itself, on the reveal beat; otherwise it lands on load
+const introArmed = document.documentElement.classList.contains('intro-armed') && !reduced;
+addEventListener('load', () => { if (!introArmed) revealWords(); });
 
 // ---------- bar ----------
 const nav = $('[data-nav]');
@@ -254,7 +256,140 @@ addEventListener('load', () => {
 });
 if (reduced) { plainReveal(); plainMoments(); }
 
+// ---------- the intro: survey from the valley floor ----------
+// The night veil is up from first paint (armed in the head script). A red survey cross and a mono
+// altitude readout climb the STATIONS ladder, physically clamped to the highest station the real load
+// has unlocked, never a timer's percentage. At the summit, or a hard 1800ms cap, the camera lifts from
+// a near-plan survey rig to the shipped hero oblique in one 900ms move, the veil walks to zero and the
+// headline knocks up through it. All the intro does is choreograph parts that already ship.
+const HERO_RIG = {
+  port: { fov: 33, from: [-1.2, 23, 15], to: [-1.2, 23, 15], look: [-1.2, 3.4, -1], lookTo: [-1.2, 3.4, -1] },
+  land: { fov: 26, from: [-1.0, 22, 15], to: [-1.0, 22, 15], look: [-1.0, 6.0, -1], lookTo: [-1.0, 6.0, -1] },
+};
+// the lift's start: camera nearly overhead, the massif read flat as a plate on the survey table, so
+// the reveal is a real plan-to-oblique tilt and not a small nudge
+const SURVEY_RIG = {
+  port: { fov: 34, from: [-1.2, 48, 2.0], look: [-1.2, 1.0, -1.5] },
+  land: { fov: 26, from: [-1.0, 44, 1.5], look: [-1.0, 1.0, -1.5] },
+};
+
+const introEl = $('[data-intro]');
+const introAltEl = $('[data-intro-alt]');
+const introStnEl = $('[data-intro-stn]');
+const veilEl = $('[data-veil]');
+const debugIntro = new URLSearchParams(location.search).has('introdebug');
+const INTRO_STATIONS = [[BASE, 'Kathmandu'], [2846, 'Lukla'], [5364, 'Base Camp'], [7906, 'South Col'], [SUMMIT, 'Sagarmatha']];
+const CLIMB_MS = debugIntro ? 2600 : 1500;
+const CAP_MS = debugIntro ? 3400 : 1800;
+const REVEAL_MS = 900;
+let introCeil = 0, introDone = false, introT0 = 0;
+
+// a real cubic-bezier(0.16,1,0.3,1) sampler for the JS-driven camera lift (CSS owns the rest)
+function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+  const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const fx = (t) => ((ax * t + bx) * t + cx) * t;
+  const fy = (t) => ((ay * t + by) * t + cy) * t;
+  const dfx = (t) => (3 * ax * t + 2 * bx) * t + cx;
+  return (x) => { let t = x; for (let i = 0; i < 6; i++) { const e = fx(t) - x; if (Math.abs(e) < 1e-4) break; const d = dfx(t) || 1e-4; t -= e / d; } return fy(t); };
+}
+// the veil lifts fast (the dark off the sheet, gone under ~400ms); the camera tilts on a smoother curve
+// so the plan-to-oblique move stays trackable across the whole 900ms and settles soft
+const easeCam = bezier(0.42, 0, 0.16, 1);
+const VEIL_MS = 400;
+
+function introMilestone(stage) {
+  const idx = { three: 1, dem: 2, compile: 3, ready: 4 }[stage];
+  if (idx != null && idx > introCeil) introCeil = idx;
+}
+function paintIntro(alt) {
+  if (introAltEl) introAltEl.textContent = alt >= SUMMIT - 1 ? '8,848.86' : Math.round(alt).toLocaleString('en-US');
+  let stn = INTRO_STATIONS[0][1];
+  for (const s of INTRO_STATIONS) if (alt >= s[0] - 1) stn = s[1];
+  if (introStnEl && introStnEl.textContent !== stn) introStnEl.textContent = stn;
+}
+function introTick(now) {
+  if (introDone) return;
+  if (!introT0) introT0 = now;
+  const el = now - introT0;
+  const p = 1 - Math.pow(1 - Math.min(1, el / CLIMB_MS), 2.2);      // the survey() draw easing, reused
+  const natural = BASE + (SUMMIT - BASE) * p;
+  const ceil = INTRO_STATIONS[introCeil][0];
+  const alt = Math.min(natural, ceil);                             // never past the station the load unlocked
+  paintIntro(alt);
+  if (terrain) { terrain.setAltitude(alt); applyRed(alt); }        // the sheet draws under the veil, ready for the lift
+  if (alt >= SUMMIT - 1 || el >= CAP_MS) { startReveal(); return; }
+  requestAnimationFrame(introTick);
+}
+function startReveal() {
+  if (introDone) return;
+  introDone = true;
+  try { sessionStorage.setItem('nacc-intro-v1', '1'); } catch (e) {}
+  paintIntro(SUMMIT);
+  shown = target = targetAltitude();
+  const hasCanvas = !!terrain;
+  if (hasCanvas) {
+    terrain.setAltitude(SUMMIT); applyRed(SUMMIT);
+    document.documentElement.classList.add('gl');
+    canvas.classList.add('is-ready');
+    if (still) still.hidden = true;                // the still-to-canvas swap happens under the opaque veil, no crossfade
+    terrain.armReveal(SURVEY_RIG);
+  }
+  if (introEl) introEl.classList.add('is-revealing');
+  const t0 = performance.now();
+  let wordsFired = false;
+  (function rev(now) {
+    const dt = now - t0;
+    const k = Math.min(1, dt / REVEAL_MS);
+    if (hasCanvas) { terrain.reveal(easeCam(k)); pinSpot(); }   // the table tilts up: survey rig to hero oblique
+    if (veilEl) veilEl.style.opacity = String(Math.max(0, 1 - dt / VEIL_MS));   // the dark lifts off the sheet
+    if (!wordsFired && dt >= 300) { wordsFired = true; revealWords(0); }        // headline knocks up at the 300ms mark
+    if (k < 1) requestAnimationFrame(rev);
+    else finishReveal(hasCanvas);
+  })(performance.now());
+}
+function finishReveal(hasCanvas) {
+  if (hasCanvas) {
+    terrain.endReveal();
+    terrain.setProgress(0);
+    measureMask(); applyShader(); pinSpot();
+  }
+  paint(shown);
+  if (introEl) introEl.hidden = true;
+}
+function skipIntro() { if (!introDone) startReveal(); }
+if (introArmed) {
+  const skipBtn = $('[data-skip]');
+  if (skipBtn) skipBtn.addEventListener('click', skipIntro);
+  addEventListener('keydown', () => { if (introArmed && !introDone) skipIntro(); });
+}
+
 // ---------- terrain ----------
+function configureTerrain() {
+  // The hero camera: a near-plan oblique, the massif as a sheet on a table and not a horizon.
+  // from equals to, so setProgress no longer travels the camera; it still drives the parallax settle.
+  terrain.setRig(HERO_RIG);
+  // Schneider rhythm read at this camera: a phone frame drowns below 180 m, a desktop frame goes
+  // hollow above 120 m. The sheet note states whichever interval is actually drawn.
+  const IV_M = mobile ? 160 : 120;
+  terrain.tune('uInterval', IV_M / 1000 * 1.2);
+  terrain.tune('uThinA', mobile ? 0.28 : 0.30);
+  terrain.tune('uIndexW', 2.3);
+  terrain.tune('uFogNear', 34); terrain.tune('uFogFar', 110);
+  terrain.tune('uWash', 0.03);
+  const ci = $('[data-ci]'); if (ci) ci.textContent = 'contours ' + IV_M + ' m, index ' + IV_M * 5 + ' m';
+  measureMask();
+  terrain.setAltitude(BASE);
+  applyShader();
+  applyRed(BASE);
+  window.__terrain = terrain;                      // QA handle only
+}
+function attachTerrainPointer() {
+  if (!mobile && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    addEventListener('pointermove', (e) => terrain && terrain.setPointer((e.clientX / innerWidth - 0.5) * 2, (e.clientY / innerHeight - 0.5) * -2), { passive: true });
+  }
+  addEventListener('pagehide', () => terrain && terrain.destroy(), { once: true });
+}
 async function startTerrain() {
   if (!canvas) return;
   const useStill = () => {
@@ -267,33 +402,31 @@ async function startTerrain() {
     addEventListener('resize', fade, { passive: true });
     fade();
   };
-  if (reduced || no3d || lowEnd || !webglAvailable()) return useStill();
+  if (reduced || no3d || lowEnd || !webglAvailable()) { if (introArmed && !introDone) startReveal(); return useStill(); }
   try {
     const t0 = performance.now();
-    terrain = await initTerrain({ canvas, mobile });
-    if (performance.now() - t0 > 4000) { terrain.destroy(); terrain = null; return useStill(); }
-    // The hero camera: a near-plan oblique, the massif as a sheet on a table and not a horizon.
-    // from equals to, so setProgress no longer travels the camera; it still drives the parallax settle.
-    terrain.setRig({
-      port: { fov: 33, from: [-1.2, 23, 15], to: [-1.2, 23, 15], look: [-1.2, 3.4, -1], lookTo: [-1.2, 3.4, -1] },
-      land: { fov: 26, from: [-1.0, 22, 15], to: [-1.0, 22, 15], look: [-1.0, 6.0, -1], lookTo: [-1.0, 6.0, -1] },
-    });
-    // Schneider rhythm read at this camera: a phone frame drowns below 180 m, a desktop frame goes
-    // hollow above 120 m. The sheet note states whichever interval is actually drawn.
-    const IV_M = mobile ? 160 : 120;
-    terrain.tune('uInterval', IV_M / 1000 * 1.2);
-    terrain.tune('uThinA', mobile ? 0.28 : 0.30);
-    terrain.tune('uIndexW', 2.3);
-    terrain.tune('uFogNear', 34); terrain.tune('uFogFar', 110);
-    terrain.tune('uWash', 0.03);
-    const ci = $('[data-ci]'); if (ci) ci.textContent = 'contours ' + IV_M + ' m, index ' + IV_M * 5 + ' m';
+    // milestones drive the intro's counter through real load events; debug slows them for frame capture
+    terrain = await initTerrain({ canvas, mobile, onMilestone: introMilestone, debug: debugIntro });
+    if (!introArmed && performance.now() - t0 > 4000) { terrain.destroy(); terrain = null; return useStill(); }
+    configureTerrain();
+    introMilestone('ready');
 
-    measureMask();
-    terrain.setAltitude(BASE);
-    applyShader();
-    applyRed(BASE);
-    window.__terrain = terrain;                      // QA handle only
+    if (introArmed) {
+      // the intro's rAF loop owns the reveal. If the 1800ms cap already fired it with no canvas ready,
+      // bring the live sheet up now through the ordinary is-ready fade.
+      if (introDone) {
+        terrain.setAltitude(SUMMIT); applyRed(SUMMIT);
+        document.documentElement.classList.add('gl');
+        canvas.classList.add('is-ready');
+        if (still) { still.style.opacity = '0'; setTimeout(() => { still.hidden = true; }, 420); }
+        pinSpot();
+        shown = target = targetAltitude(); paint(shown);
+      }
+      attachTerrainPointer();
+      return;
+    }
 
+    // no intro this session (repeat visit): the shipped path, sheet surveyed valley-to-summit into the spot
     document.documentElement.classList.add('gl');   // the spot stops being a static plate label
     canvas.classList.add('is-ready');
     if (still) { still.style.opacity = '0'; setTimeout(() => { still.hidden = true; }, 420); }
@@ -316,22 +449,23 @@ async function startTerrain() {
       shown = target = targetAltitude(); paint(shown);
     } else {
       surveying = true;
-      const DUR = 1000, t0 = performance.now(), draw2 = (k) => 1 - Math.pow(1 - k, 2.2);
+      const DUR = 1000, t0b = performance.now(), draw2 = (k) => 1 - Math.pow(1 - k, 2.2);
       (function survey(now) {
-        const k = Math.min(1, (now - t0) / DUR);
+        const k = Math.min(1, (now - t0b) / DUR);
         const m = BASE + (SUMMIT - BASE) * draw2(k);
         terrain.setAltitude(m); applyRed(m); paintSpot(k === 1 ? SUMMIT : m, k === 1); pinSpot();
         if (k < 1) requestAnimationFrame(survey);
         else { surveying = false; shown = target = targetAltitude(); paint(shown); }
       })(performance.now());
     }
-    if (!mobile && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      addEventListener('pointermove', (e) => terrain && terrain.setPointer((e.clientX / innerWidth - 0.5) * 2, (e.clientY / innerHeight - 0.5) * -2), { passive: true });
-    }
-    addEventListener('pagehide', () => terrain && terrain.destroy(), { once: true });
-  } catch (err) { useStill(); }
+    attachTerrainPointer();
+  } catch (err) { if (introArmed && !introDone) startReveal(); useStill(); }
 }
-if ('requestIdleCallback' in window) requestIdleCallback(startTerrain, { timeout: 1500 }); else setTimeout(startTerrain, 200);
+if (introArmed) {
+  requestAnimationFrame(introTick);                                  // the readout starts climbing from first paint
+  requestAnimationFrame(() => requestAnimationFrame(startTerrain));  // boot terrain a paint later so the veil shows first
+} else if ('requestIdleCallback' in window) requestIdleCallback(startTerrain, { timeout: 1500 });
+else setTimeout(startTerrain, 200);
 
 // ---------- the door ----------
 const form = $('#door-form');

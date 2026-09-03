@@ -25,8 +25,30 @@
 <link rel="stylesheet" href="assets/fonts/fonts.css">
 <link rel="stylesheet" href="css/style.css">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.min.js"}}</script>
+<script>
+/* Arm the survey intro synchronously, before first paint, so the night veil is up from frame one and
+   the letter never flashes underneath it. No JS, reduced motion, no-WebGL, ?no3d, low-end and a second
+   visit in the same session all skip arming, and then the veil is display:none and the page reads plainly. */
+(function () { try {
+  var p = new URLSearchParams(location.search);
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var seen = null; try { seen = sessionStorage.getItem('nacc-intro-v1'); } catch (e) {}
+  var low = (navigator.deviceMemory || 8) <= 2 || (navigator.connection && navigator.connection.saveData);
+  var gl = false; try { gl = !!document.createElement('canvas').getContext('webgl2'); } catch (e) {}
+  if (!reduced && !p.has('no3d') && !low && gl && !seen) document.documentElement.className += ' intro-armed';
+} catch (e) {} })();
+</script>
 </head>
 <body>
+
+<div class="intro" data-intro aria-hidden="true">
+  <div class="intro-veil" data-veil></div>
+  <div class="intro-mark">
+    <span class="intro-cross" aria-hidden="true"></span>
+    <p class="intro-read"><b data-intro-alt>1,400</b> m<s data-intro-stn>Kathmandu</s></p>
+  </div>
+  <button class="intro-skip" type="button" data-skip>skip survey</button>
+</div>
 
 <canvas id="massif" aria-hidden="true"></canvas>
 <img id="massif-still" alt="" aria-hidden="true" decoding="async" fetchpriority="high"
@@ -45,6 +67,7 @@
   <nav class="nav-links" aria-label="Primary">
     <a class="navlink" href="https://mail.nepalaccelerates.com">Mail</a>
     <a class="navlink" href="#door">Write back</a>
+    <button class="navlink navlink-btn" type="button" data-open-panel>Team</button>
   </nav>
 </header>
 
@@ -224,7 +247,6 @@
 <footer class="foot">
   <a class="foot-inv" href="https://mail.nepalaccelerates.com">Take your own name on the domain. name@nepalaccelerates.com, run by us, no one in the middle.</a>
   <a class="foot-mail" href="mailto:hello@nepalaccelerates.com">hello@nepalaccelerates.com</a>
-  <button class="foot-team" type="button" data-open-panel>n/acc team</button>
 </footer>
 
 <div class="panel" id="team-panel" hidden>

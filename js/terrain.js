@@ -1,20 +1,17 @@
 // Sagarmatha massif as a survey sheet. Real SRTM heights (assets/dem), drawn as contour lines.
 // One scene, one idea: the sheet is a 34.56 km square of the Khumbu, drawn only up to the reader's altitude.
-// Exposes: initTerrain({ canvas, mobile }) -> handle with setAltitude / setProgress / setMask / setInk / setPointer / destroy
-import * as THREE from 'three';
+// Exposes: initTerrain({ canvas, mobile, onReady, onMilestone, debug }) -> handle
+//   setAltitude / setProgress / setMask / setInk / setPointer / setRig / armReveal / reveal / endReveal / destroy
+// three is loaded dynamically inside initTerrain, so the import() itself is a real load milestone the intro counts.
 
 const EXTENT_KM = 34.56;                 // the grid covers a 34.56 km square, row 0 = north, col 0 = west
 const EXAG = 1.2;                        // vertical exaggeration; survey sheets do the same for relief
 
-// sRGB triplets, passed straight through: the shader mixes in sRGB so uAlpha 0.45 is exactly --contour-ink.
-const srgb = (hex) => new THREE.Vector3(
-  parseInt(hex.slice(1, 3), 16) / 255,
-  parseInt(hex.slice(3, 5), 16) / 255,
-  parseInt(hex.slice(5, 7), 16) / 255,
-);
-const BG = srgb('#060606');
-const CREAM = srgb('#ede8de');
-const RED = srgb('#e8402a');
+// sRGB hex, resolved to vectors inside initTerrain once three is imported: the shader mixes in sRGB
+// so uAlpha 0.45 is exactly --contour-ink.
+const BG_HEX = '#060606';
+const CREAM_HEX = '#ede8de';
+const RED_HEX = '#e8402a';
 
 // the highest closed contour the mesh can hold: 256 grid tops at 8,719 m, 128 grid at 8,688 m
 const RING_CAP = { 256: 8700, 128: 8640 };
@@ -98,9 +95,26 @@ const FRAG = `
     gl_FragColor = vec4(col, 1.0);
   }`;
 
-export async function initTerrain({ canvas, mobile = false, onReady } = {}) {
+export async function initTerrain({ canvas, mobile = false, onReady, onMilestone, debug = false } = {}) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Milestone 1: the library itself. Timing this is why the boot switched off the static import.
+  const THREE = await import('three');
+  if (onMilestone) onMilestone('three');
+  if (debug) await sleep(200);
+
+  const srgb = (hex) => new THREE.Vector3(
+    parseInt(hex.slice(1, 3), 16) / 255,
+    parseInt(hex.slice(3, 5), 16) / 255,
+    parseInt(hex.slice(5, 7), 16) / 255,
+  );
+  const BG = srgb(BG_HEX), CREAM = srgb(CREAM_HEX), RED = srgb(RED_HEX);
+
+  // Milestone 2: the DEM webp fetched and decoded.
   const gridUrl = new URL(mobile ? '../assets/dem/sagarmatha-128.webp' : '../assets/dem/sagarmatha-256.webp', import.meta.url).href;
   const dem = await loadHeights(gridUrl);
+  if (onMilestone) onMilestone('dem');
+  if (debug) await sleep(200);
   const S = dem.size;
   const ringCap = RING_CAP[S] || 8640;
 
@@ -168,6 +182,7 @@ export async function initTerrain({ canvas, mobile = false, onReady } = {}) {
   const pointer = { x: 0, y: 0 };
   let progress = 0, ghostAlt = 0, ghostBoost = 0;
   let dirty = true, visible = true, alive = true;
+  let revealing = false, surveyLand = null, surveyPort = null;   // the intro lift owns the camera while it runs
 
   function layout() {
     const w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
@@ -184,6 +199,7 @@ export async function initTerrain({ canvas, mobile = false, onReady } = {}) {
   layout();
 
   function draw() {
+    if (revealing) return;        // the intro lift renders the camera itself; don't fight it
     // the camera is the same number as everything else: linear in altitude, and it stops when it stops
     const cp = progress;
     const settle = 1 - Math.max(0, Math.min(1, (progress - 0.86) / 0.14));   // parallax fades out at the summit
@@ -212,7 +228,12 @@ export async function initTerrain({ canvas, mobile = false, onReady } = {}) {
   const onLost = (e) => { e.preventDefault(); alive = false; };
   canvas.addEventListener('webglcontextlost', onLost);
 
-  draw();
+  // Milestone 3: geometry written and shaders compiled off the first-frame critical path.
+  await renderer.compileAsync(scene, camera);
+  if (onMilestone) onMilestone('compile');
+  if (debug) await sleep(200);
+
+  draw();                       // first real frame: the intro treats the resolve of this call as the summit event
   if (onReady) onReady();
 
   return {
@@ -249,6 +270,36 @@ export async function initTerrain({ canvas, mobile = false, onReady } = {}) {
       rig = camera.aspect < 1 ? port : land;
       camera.fov = rig.fov; camera.updateProjectionMatrix(); dirty = true;
     },
+    // The intro reveal. Store a near-plan survey rig as the lift's start; the active land/port rig
+    // (set by setRig to the shipped hero) is the end. reveal(k) walks the camera between them in one
+    // coordinate space, so the table appears to tilt up into the hero. Numbers in, no taste here.
+    armReveal(next) {
+      const v = (a) => new THREE.Vector3(a[0], a[1], a[2]);
+      if (next.land) surveyLand = { fov: next.land.fov ?? land.fov, from: v(next.land.from), look: v(next.land.look) };
+      if (next.port) surveyPort = { fov: next.port.fov ?? port.fov, from: v(next.port.from), look: v(next.port.look) };
+      revealing = true; dirty = true;
+    },
+    reveal(k) {
+      const s = camera.aspect < 1 ? surveyPort : surveyLand;
+      const h = camera.aspect < 1 ? port : land;
+      if (!s) return;
+      camera.fov = s.fov + (h.fov - s.fov) * k;
+      camera.position.set(
+        s.from.x + (h.from.x - s.from.x) * k,
+        s.from.y + (h.from.y - s.from.y) * k,
+        s.from.z + (h.from.z - s.from.z) * k,
+      );
+      aim.set(
+        s.look.x + (h.look.x - s.look.x) * k,
+        s.look.y + (h.look.y - s.look.y) * k,
+        s.look.z + (h.look.z - s.look.z) * k,
+      );
+      camera.lookAt(aim);
+      camera.updateProjectionMatrix();
+      uniforms.uCam.value.copy(camera.position);
+      renderer.render(scene, camera);
+    },
+    endReveal() { revealing = false; dirty = true; },
     tune(k, v) { if (uniforms[k]) { uniforms[k].value = v; dirty = true; } },
     destroy() {
       alive = false; ro.disconnect(); io.disconnect();
