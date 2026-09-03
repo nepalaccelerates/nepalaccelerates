@@ -61,46 +61,70 @@ em { font-style: italic; }
    and becomes what it is: the hero's sheet. The letter below it reads on clean night. */
 html:not(.jsr) #massif-still { position: absolute; top: 0; left: 0; height: 100vh; height: 100svh; }
 
-/* ---------- the intro: survey from the valley floor ---------- */
-/* A night veil over the whole page (above the hero at z2, above the bar at z3) with a red survey
-   cross and a mono altitude readout. Only present when the head script armed it; otherwise display:none,
-   so no-JS, reduced motion and repeat visits never see it. The veil opacity is driven by JS on reveal. */
-.intro { position: fixed; inset: 0; z-index: 5; display: none; }
+/* ---------- the intro: n/acc accelerates ---------- */
+/* A night screen over the whole page (above the hero at z2, above the bar at z3). The "n/acc"
+   wordmark holds centre and vibrates harder as the real load progresses: RGB-split ghosts pull
+   apart, the runner clip accelerates behind it, speed streaks whip past, then the whole thing
+   launches forward and the veil lifts into the hero. Only present when the head script armed it;
+   otherwise display:none, so no-JS, reduced motion and repeat visits never see it. JS drives the
+   --speed/--split/--jx/--jy/--launch custom properties per frame; the veil opacity is walked to
+   zero by JS on the lift. */
+.intro {
+  position: fixed; inset: 0; z-index: 5; display: none; overflow: hidden;
+  --speed: 0; --split: 0px; --jx: 0px; --jy: 0px; --launch: 0;
+  background: var(--night);
+}
 html.intro-armed .intro { display: block; }
 .intro[hidden] { display: none !important; }
-.intro-veil { position: absolute; inset: 0; background: var(--night); will-change: opacity; }
-.intro-mark {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  text-align: center; will-change: opacity, transform;
+.intro-veil { position: absolute; inset: 0; background: var(--night); z-index: 2; will-change: opacity; }
+
+/* the runner, low and dark behind everything, accelerating with the load */
+.intro-runner {
+  position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+  object-fit: cover; object-position: center; pointer-events: none;
+  opacity: calc((0.05 + 0.30 * var(--speed)) * (1 - var(--launch)));
+  filter: grayscale(1) contrast(1.15) brightness(0.72);
+  transform: scale(calc(1.04 + 0.16 * var(--speed) + 0.5 * var(--launch)));
+  mix-blend-mode: screen;
 }
-.intro-cross { position: relative; display: block; width: 24px; height: 24px; margin: 0 auto 20px; }
-.intro-cross::before, .intro-cross::after { content: ""; position: absolute; background: var(--brick); }
-.intro-cross::before { left: 0; top: 50%; width: 24px; height: 1px; transform: translateY(-50%); }
-.intro-cross::after { left: 50%; top: 0; width: 1px; height: 24px; transform: translateX(-50%); }
-.intro-read {
-  margin: 0; font-family: var(--mono); font-size: var(--r1); letter-spacing: 0.12em;
-  color: var(--cream); font-variant-numeric: tabular-nums; line-height: 1.4;
+
+/* forward speed streaks: hairline cream lines that whip past, off until the build has momentum,
+   then blasted outward on launch. Built from the survey's own line vocabulary, not a glow. */
+.intro-streaks {
+  position: absolute; inset: -20% -40%; z-index: 3; pointer-events: none;
+  opacity: calc(var(--speed) * var(--speed) * 0.5 + var(--launch) * 0.6);
+  background-image: repeating-linear-gradient(90deg,
+    transparent 0, transparent 46px, rgba(237, 232, 222, 0.55) 47px, transparent 48px, transparent 92px);
+  -webkit-mask-image: radial-gradient(120% 60% at 50% 50%, transparent 22%, #000 78%);
+  mask-image: radial-gradient(120% 60% at 50% 50%, transparent 22%, #000 78%);
+  transform: translateX(var(--jx)) scaleX(calc(1 + 3 * var(--launch)));
 }
-.intro-read b { font-weight: 400; }
-.intro-read s {
-  display: block; margin-top: 8px; text-decoration: none;
-  font-size: var(--r-1); letter-spacing: 0.22em; text-transform: uppercase; color: var(--cream-60);
+
+/* the wordmark, dead centre, jittering. Three stacked copies: a red channel and a cyan channel
+   that pull apart into chromatic fringes under --split (mix-blend screen recombines them to white
+   where they overlap on the night ground), and the crisp cream lockup on top. */
+.intro-stage {
+  position: absolute; left: 50%; top: 50%; z-index: 4;
+  transform: translate(calc(-50% + var(--jx)), calc(-50% + var(--jy))) scale(calc(1 + 1.9 * var(--launch)));
+  will-change: transform, opacity;
+  opacity: calc(1 - var(--launch) * var(--launch));
 }
-.intro-skip {
-  position: absolute; right: var(--s3); bottom: calc(var(--s3) + env(safe-area-inset-bottom));
-  background: none; border: 0; cursor: pointer; padding: 12px;
-  font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.16em; text-transform: uppercase;
-  color: var(--cream-60); transition: color var(--t1) var(--ease);
+.intro-stage > * {
+  grid-area: 1 / 1; margin: 0; text-align: center; white-space: nowrap;
+  font-family: var(--text); font-weight: 400; letter-spacing: -0.03em; line-height: 0.9;
+  font-size: clamp(72px, 20vw, 216px);
 }
-.intro-skip:hover { color: var(--cream); }
-@keyframes introPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.28; } }
-.intro-cross { animation: introPulse 1.25s var(--ease) infinite; }
-/* the reveal fades the instrument off fast; the veil itself is walked to zero by JS on the lift */
-.intro-mark, .intro-skip { transition: opacity 260ms var(--ease), transform 260ms var(--ease); }
-.intro.is-revealing .intro-mark { opacity: 0; transform: translate(-50%, -66%); }
-.intro.is-revealing .intro-skip { opacity: 0; }
-.intro.is-revealing .intro-cross { animation: none; }
-/* belt and braces: reduced motion never shows the veil even if the class slips through */
+.intro-stage { display: grid; place-items: center; }
+.intro-lock { color: var(--cream); position: relative; }
+.intro-lock i { font-style: normal; color: var(--brick); }
+.intro-ghost { position: absolute; mix-blend-mode: screen; }
+.intro-ghost-r { color: #ff2d1a; transform: translateX(calc(var(--split) * -1)); }
+.intro-ghost-c { color: #16e0ff; transform: translateX(var(--split)); }
+
+/* the launch: the crisp lockup smears forward as the ghosts blow past it. No transition on the
+   per-frame vars (JS owns the curve); only the final fade-out is eased. */
+.intro.is-revealing .intro-veil { will-change: opacity; }
+/* belt and braces: reduced motion never shows the screen even if the class slips through */
 @media (prefers-reduced-motion: reduce) { .intro { display: none !important; } }
 
 /* ---------- the hero: the survey in motion ---------- */
@@ -285,16 +309,37 @@ input, select, textarea {
 }
 input::placeholder, textarea::placeholder { color: #57554f; }
 input:focus, select:focus, textarea:focus { outline: none; border-bottom-color: var(--cream); box-shadow: inset 0 -1px 0 var(--cream); }
-form .is-invalid, form .is-invalid:focus { border-bottom-color: var(--brick); box-shadow: none; }
-select {
-  padding-right: 36px; cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%23918e88' stroke-width='1.5'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 4px center;
-}
-select:invalid { color: #57554f; }
-select:invalid option { color: var(--cream); }
-select option { background: #101010; color: var(--cream); }
+form input.is-invalid, form input.is-invalid:focus, form textarea.is-invalid { border-bottom-color: var(--brick); box-shadow: none; }
 textarea { min-height: 132px; resize: vertical; }
+
+/* the reason picker: a stacked radiogroup, not a dropdown. Linear/Vercel's equal-height full-width
+   rows, radius 0, hairline borders, a mono index numeral where they put a provider icon, and the one
+   red reserved for the chosen row (the marker and its numeral), the way Linear spends its indigo. */
+.field-label { font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cream-60); }
+.reasons { display: flex; flex-direction: column; margin-top: 4px; }
+.reason {
+  position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s2);
+  min-height: 56px; padding: 0 14px; cursor: pointer;
+  border: 1px solid var(--hairline); border-bottom: 0;
+  font-size: max(16px, var(--r0)); color: var(--cream);
+  transition: border-color var(--t1) var(--ease), background var(--t1) var(--ease);
+}
+.reason:last-child { border-bottom: 1px solid var(--hairline); }
+.reason .reason-n { font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.06em; color: var(--cream-60); font-variant-numeric: tabular-nums; transition: color var(--t1) var(--ease); }
+.reason .reason-t { line-height: 1.3; }
+.reason .reason-dot { width: 9px; height: 9px; border: 1px solid var(--cream-60); flex: none; transition: background var(--t1) var(--ease), border-color var(--t1) var(--ease); }
+/* the native input carries focus and keyboard; it is not shown, but never display:none (that removes it
+   from the tab order and arrow-key radiogroup navigation) */
+.reason input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; pointer-events: none; }
+@media (hover: hover) { .reason:hover { border-color: var(--cream-60); background: rgba(237, 232, 222, 0.03); } }
+.reason:focus-within { outline: 2px solid var(--brick); outline-offset: -2px; }
+.reason:has(input:checked) { border-color: var(--cream); z-index: 1; }
+.reason:has(input:checked) + .reason { border-top-color: var(--cream); }
+.reason:has(input:checked) .reason-n { color: var(--brick); }
+.reason:has(input:checked) .reason-dot { background: var(--brick); border-color: var(--brick); }
+/* failed submit with nothing chosen: the whole group is marked */
+.reasons.is-invalid .reason { border-color: var(--brick); }
+.reasons.is-invalid .reason + .reason { border-top-color: var(--brick); }
 .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .error { color: var(--brick); font-size: var(--r0); margin: 0 0 var(--s2); }
 .btn {
@@ -394,9 +439,26 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 .panel-title { font-family: var(--text); font-weight: 400; font-size: var(--r3); line-height: 1; margin: 0 0 6px; letter-spacing: -0.01em; }
 .panel-title .slash { color: var(--brick); }
 .panel-sub { color: var(--cream-60); font-size: var(--r0); margin: 0 0 var(--s5); }
-.panel-err { color: var(--brick); font-size: var(--r0); margin: 0 0 var(--s2); }
+/* the rejection: a new hairline strip appears above the submit row (Cal.com's model, no icon), in
+   Plex Mono with the n/acc red hairline, in the survey's restricted-terminal voice. The inputs are
+   marked red and never cleared; the card takes one sharp shake, not a wobble. */
+.panel-err {
+  margin: 0 0 var(--s3); padding: 10px 12px;
+  border: 1px solid var(--brick); background: rgba(232, 64, 42, 0.06);
+  font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.04em; line-height: 1.5; color: var(--brick);
+}
+.panel-err[hidden] { display: none; }
+.panel-err b { font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; }
+.panel-err span { display: block; margin-top: 3px; color: #c98a80; letter-spacing: 0.02em; }
+.panel-code { font-variant-numeric: tabular-nums; }
+.panel-card input.is-bad, .panel-card input.is-bad:focus { border-bottom-color: var(--brick); box-shadow: inset 0 -1px 0 var(--brick); }
+@keyframes panelReject { 0% { transform: none; } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } 100% { transform: none; } }
+.panel-card.is-rejected { animation: panelReject 320ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@media (prefers-reduced-motion: reduce) { .panel-card.is-rejected { animation: none; } }
 .panel-submit { width: 100%; margin-top: var(--s3); }
 .panel-submit:disabled { opacity: 0.6; cursor: default; }
+/* the loading state reads as an instrument taking a reading, not a spinner */
+.panel-submit[data-busy] { letter-spacing: 0.14em; }
 
 
 /* ---------- Benchmark bar (nav direction A) ---------- */
@@ -427,7 +489,7 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 }
 .navlink::before { content: ""; position: absolute; left: 0; bottom: 12px; width: 100%; height: 1px; background: var(--hairline); transform: scaleX(1); transform-origin: left; }
 .navlink::after { content: ""; position: absolute; left: 0; bottom: 12px; width: 100%; height: 1px; background: var(--brick); transform: scaleX(0); transform-origin: left; transition: transform var(--t2) var(--ease); }
-.navlink-btn { background: none; border: 0; cursor: pointer; font-family: var(--mono); font-size: inherit; letter-spacing: inherit; }
+.navlink-btn { background: none; border: 0; cursor: pointer; }
 .navlink:hover { color: var(--cream); }
 .navlink:hover::after { transform: scaleX(1); }
 @media (max-width: 620px) {

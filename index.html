@@ -43,11 +43,13 @@
 
 <div class="intro" data-intro aria-hidden="true">
   <div class="intro-veil" data-veil></div>
-  <div class="intro-mark">
-    <span class="intro-cross" aria-hidden="true"></span>
-    <p class="intro-read"><b data-intro-alt>1,400</b> m<s data-intro-stn>Kathmandu</s></p>
+  <video class="intro-runner" data-intro-runner src="assets/video/runner.mp4" muted loop playsinline preload="auto" tabindex="-1"></video>
+  <div class="intro-streaks"></div>
+  <div class="intro-stage" data-intro-mark>
+    <span class="intro-ghost intro-ghost-r">n/acc</span>
+    <span class="intro-ghost intro-ghost-c">n/acc</span>
+    <span class="intro-lock">n<i>/</i>acc</span>
   </div>
-  <button class="intro-skip" type="button" data-skip>skip survey</button>
 </div>
 
 <canvas id="massif" aria-hidden="true"></canvas>
@@ -220,14 +222,33 @@
         <input id="f-email" name="email" type="email" placeholder="prakash.k@gmail.com" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" enterkeyhint="next" required>
       </div>
       <div class="field">
-        <label for="f-reason">Why you're writing</label>
-        <select id="f-reason" name="reason" required>
-          <option value="" disabled selected>Pick one</option>
-          <option value="building">I'm building something</option>
-          <option value="funding">I'm building and need money</option>
-          <option value="backing">I want to back this</option>
-          <option value="other">Something else</option>
-        </select>
+        <span class="field-label" id="reason-label">Why you're writing</span>
+        <div class="reasons" role="radiogroup" aria-labelledby="reason-label">
+          <label class="reason">
+            <input type="radio" name="reason" value="building" required>
+            <span class="reason-n" aria-hidden="true">01</span>
+            <span class="reason-t">I'm building something</span>
+            <span class="reason-dot" aria-hidden="true"></span>
+          </label>
+          <label class="reason">
+            <input type="radio" name="reason" value="funding" required>
+            <span class="reason-n" aria-hidden="true">02</span>
+            <span class="reason-t">I'm building and need money</span>
+            <span class="reason-dot" aria-hidden="true"></span>
+          </label>
+          <label class="reason">
+            <input type="radio" name="reason" value="backing" required>
+            <span class="reason-n" aria-hidden="true">03</span>
+            <span class="reason-t">I want to back this</span>
+            <span class="reason-dot" aria-hidden="true"></span>
+          </label>
+          <label class="reason">
+            <input type="radio" name="reason" value="other" required>
+            <span class="reason-n" aria-hidden="true">04</span>
+            <span class="reason-t">Something else</span>
+            <span class="reason-dot" aria-hidden="true"></span>
+          </label>
+        </div>
       </div>
       <div class="field">
         <label for="f-message">Your message</label>

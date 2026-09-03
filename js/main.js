@@ -274,15 +274,17 @@ const SURVEY_RIG = {
 };
 
 const introEl = $('[data-intro]');
-const introAltEl = $('[data-intro-alt]');
-const introStnEl = $('[data-intro-stn]');
 const veilEl = $('[data-veil]');
+const runnerEl = $('[data-intro-runner]');
 const debugIntro = new URLSearchParams(location.search).has('introdebug');
-const INTRO_STATIONS = [[BASE, 'Kathmandu'], [2846, 'Lukla'], [5364, 'Base Camp'], [7906, 'South Col'], [SUMMIT, 'Sagarmatha']];
-const CLIMB_MS = debugIntro ? 2600 : 1500;
-const CAP_MS = debugIntro ? 3400 : 1800;
+// The build is welded to real load milestones, never a timer. introCeil climbs 0..4 as three, DEM,
+// compile and the first frame land; the vibration eases toward that ceiling. MIN_MS is only a floor so
+// an instant load still shows the mark shaking; the LAUNCH is gated on the real 'ready' event (or the
+// hard 2000ms cap). debug slows the milestones (terrain.js sleeps between them) so frames can be caught.
+const MIN_MS = debugIntro ? 1500 : 850;
+const CAP_MS = debugIntro ? 3600 : 2000;
 const REVEAL_MS = 900;
-let introCeil = 0, introDone = false, introT0 = 0;
+let introCeil = 0, introDone = false, introT0 = 0, introSpeed = 0;
 
 // a real cubic-bezier(0.16,1,0.3,1) sampler for the JS-driven camera lift (CSS owns the rest)
 function bezier(x1, y1, x2, y2) {
@@ -302,30 +304,41 @@ function introMilestone(stage) {
   const idx = { three: 1, dem: 2, compile: 3, ready: 4 }[stage];
   if (idx != null && idx > introCeil) introCeil = idx;
 }
-function paintIntro(alt) {
-  if (introAltEl) introAltEl.textContent = alt >= SUMMIT - 1 ? '8,848.86' : Math.round(alt).toLocaleString('en-US');
-  let stn = INTRO_STATIONS[0][1];
-  for (const s of INTRO_STATIONS) if (alt >= s[0] - 1) stn = s[1];
-  if (introStnEl && introStnEl.textContent !== stn) introStnEl.textContent = stn;
+// the per-frame writers CSS reads: jitter (--jx/--jy), chromatic split (--split), and the launch smear.
+// vibration builds exponentially with speed and is quelled as the launch takes over.
+function setIntroVars(speed, launch) {
+  if (!introEl) return;
+  const s = Math.max(0, Math.min(1, speed));
+  const rest = 1 - launch;
+  const amp = (0.6 + 30 * Math.pow(s, 2.3)) * rest;
+  let jx = (Math.random() * 2 - 1) * amp;
+  const jy = (Math.random() * 2 - 1) * amp * 0.55;
+  if (s > 0.32 && Math.random() < 0.05 + s * 0.13) jx += (Math.random() * 2 - 1) * s * 26;   // an occasional glitch slice
+  const split = Math.pow(s, 1.9) * 16 * rest + launch * 46;
+  const st = introEl.style;
+  st.setProperty('--speed', s.toFixed(3));
+  st.setProperty('--split', split.toFixed(1) + 'px');
+  st.setProperty('--jx', jx.toFixed(1) + 'px');
+  st.setProperty('--jy', jy.toFixed(1) + 'px');
+  st.setProperty('--launch', launch.toFixed(3));
 }
 function introTick(now) {
   if (introDone) return;
-  if (!introT0) introT0 = now;
+  if (!introT0) { introT0 = now; if (runnerEl && runnerEl.play) runnerEl.play().catch(() => {}); }
   const el = now - introT0;
-  const p = 1 - Math.pow(1 - Math.min(1, el / CLIMB_MS), 2.2);      // the survey() draw easing, reused
-  const natural = BASE + (SUMMIT - BASE) * p;
-  const ceil = INTRO_STATIONS[introCeil][0];
-  const alt = Math.min(natural, ceil);                             // never past the station the load unlocked
-  paintIntro(alt);
-  if (terrain) { terrain.setAltitude(alt); applyRed(alt); }        // the sheet draws under the veil, ready for the lift
-  if (alt >= SUMMIT - 1 || el >= CAP_MS) { startReveal(); return; }
+  const loadFrac = introCeil / 4;                       // the milestone-driven ceiling
+  const timeFrac = Math.min(1, el / MIN_MS);            // a floor, so an instant load still builds visibly
+  const targetS = Math.min(loadFrac, timeFrac);         // gated by the slower of real-load and the floor
+  introSpeed += (targetS - introSpeed) * 0.14;
+  if (runnerEl) { try { runnerEl.playbackRate = 1 + introSpeed * 2.6; } catch (e) {} }   // the clip accelerates
+  setIntroVars(introSpeed, 0);
+  if ((introCeil >= 4 && el >= MIN_MS) || el >= CAP_MS) { startReveal(); return; }   // real ready, or the hard cap
   requestAnimationFrame(introTick);
 }
 function startReveal() {
   if (introDone) return;
   introDone = true;
   try { sessionStorage.setItem('nacc-intro-v1', '1'); } catch (e) {}
-  paintIntro(SUMMIT);
   shown = target = targetAltitude();
   const hasCanvas = !!terrain;
   if (hasCanvas) {
@@ -343,6 +356,7 @@ function startReveal() {
     const k = Math.min(1, dt / REVEAL_MS);
     if (hasCanvas) { terrain.reveal(easeCam(k)); pinSpot(); }   // the table tilts up: survey rig to hero oblique
     if (veilEl) veilEl.style.opacity = String(Math.max(0, 1 - dt / VEIL_MS));   // the dark lifts off the sheet
+    setIntroVars(1, Math.min(1, dt / (REVEAL_MS * 0.72)));      // the mark streaks forward and blows out
     if (!wordsFired && dt >= 300) { wordsFired = true; revealWords(0); }        // headline knocks up at the 300ms mark
     if (k < 1) requestAnimationFrame(rev);
     else finishReveal(hasCanvas);
@@ -355,13 +369,8 @@ function finishReveal(hasCanvas) {
     measureMask(); applyShader(); pinSpot();
   }
   paint(shown);
+  if (runnerEl) { try { runnerEl.pause(); runnerEl.removeAttribute('src'); runnerEl.load(); } catch (e) {} }
   if (introEl) introEl.hidden = true;
-}
-function skipIntro() { if (!introDone) startReveal(); }
-if (introArmed) {
-  const skipBtn = $('[data-skip]');
-  if (skipBtn) skipBtn.addEventListener('click', skipIntro);
-  addEventListener('keydown', () => { if (introArmed && !introDone) skipIntro(); });
 }
 
 // ---------- terrain ----------
