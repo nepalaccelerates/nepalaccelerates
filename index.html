@@ -36,14 +36,13 @@
 
 <header class="bar" data-nav>
   <a class="mark" href="/" aria-label="n/acc, home">n<span class="slash">/</span>acc</a>
-  <span class="readout readout-bar" aria-live="off">
-    <span data-readout>1,400 m</span>
-    <span class="readout-station" data-readout-station>Kathmandu</span>
+  <span class="benchmark" aria-live="off" aria-label="Altitude on the climb">
+    <span class="bm-dot" aria-hidden="true"></span>
+    <span class="bm-m" data-readout>1,400 m</span>
+    <span class="bm-stn" data-readout-station>Kathmandu</span>
+    <span class="bm-co" aria-hidden="true">27&#176;59'N 86&#176;55'E</span>
   </span>
-  <nav class="bar-actions">
-    <a class="baraction" href="#letter">Manifesto</a>
-    <a class="btn btn-bar" href="#door">Write back</a>
-  </nav>
+  <a class="idx" href="#letter"><span class="idx-n">01</span> Manifesto</a>
 </header>
 
 <div class="spot" id="spot" aria-hidden="true">
@@ -219,16 +218,9 @@
 
 </main>
 
-<section class="mailband" aria-label="Mail">
-  <div class="mailband-in">
-    <p class="mail-k">Mail</p>
-    <p class="mail-h">Your own name on nepalaccelerates.com.</p>
-    <p class="mail-b">An inbox on the domain, run by us, no one else in the middle.</p>
-    <a class="btn mail-btn" href="https://mail.nepalaccelerates.com">Open mail</a>
-  </div>
-</section>
-
 <footer class="foot">
+  <a class="foot-wb" href="#door">Write back &#8594;</a>
+  <a class="foot-inv" href="https://mail.nepalaccelerates.com">The same inbox is open to you. Take your name on the domain, name@nepalaccelerates.com, run by us with no one in the middle.</a>
   <a class="foot-mail" href="mailto:hello@nepalaccelerates.com">hello@nepalaccelerates.com</a>
   <button class="foot-team" type="button" data-open-panel>n/acc team</button>
 </footer>

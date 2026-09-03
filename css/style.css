@@ -364,3 +364,35 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
 .panel-err { color: var(--brick); font-size: var(--r0); margin: 0 0 var(--s2); }
 .panel-submit { width: 100%; margin-top: var(--s3); }
 .panel-submit:disabled { opacity: 0.6; cursor: default; }
+
+
+/* ---------- Benchmark bar (nav direction A) ---------- */
+.bar { gap: var(--s4); }
+.benchmark { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; color: var(--cream-60); white-space: nowrap; }
+.bm-dot { width: 6px; height: 6px; border: 1px solid var(--brick); border-radius: 50%; flex: none; }
+.bm-m { color: var(--cream); font-variant-numeric: tabular-nums; }
+.bm-m.is-summit { color: var(--brick); }
+.bm-stn { text-transform: uppercase; }
+.bm-co { color: #84817a; }
+.idx { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cream-60); text-decoration: none; min-height: 44px; padding: 14px 0; position: relative; transition: color var(--t1) var(--ease); }
+.idx-n { color: var(--brick); }
+.idx::after { content: ""; position: absolute; left: 0; right: 100%; bottom: 8px; height: 1px; background: var(--cream); transition: right var(--t2) var(--ease); }
+.idx:hover { color: var(--cream); }
+.idx:hover::after { right: 0; }
+@media (max-width: 680px) { .bm-co { display: none; } }
+@media (max-width: 460px) { .bm-stn { display: none; } .benchmark { gap: 8px; } .idx { letter-spacing: 0.1em; } }
+
+/* ---------- footer as a plain-text stack ---------- */
+.foot {
+  position: relative; z-index: 3; background: var(--night); max-width: var(--frame); margin: 0 auto;
+  padding: var(--s8) var(--s3) calc(var(--s6) + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+  border-top: 1px solid var(--hairline); font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.03em; line-height: 1.5;
+}
+@media (min-width: 1000px) { .foot { padding-left: 220px; } }
+.foot > * { color: var(--cream-60); text-decoration: none; background: none; border: 0; padding: 6px 0; cursor: pointer; font: inherit; text-align: left; min-height: 24px; display: block; }
+.foot-wb { color: var(--cream) !important; font-size: 15px; letter-spacing: 0.02em; }
+.foot-wb:hover, .foot-mail:hover, .foot-inv:hover { color: var(--cream); }
+.foot-inv { max-width: 52ch; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
+.foot-team { margin-top: 8px; letter-spacing: 0.12em; padding: 12px 0; }
+.foot-team:hover { color: var(--cream); }
