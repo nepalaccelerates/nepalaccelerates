@@ -18,6 +18,7 @@
   --r2: clamp(21.6px, 1.26rem + 0.3vw, 25.2px);
   --r3: clamp(26px, 1.5rem + 0.4vw, 30px);
   --r6: clamp(54px, 2.9rem + 2vw, 76px);
+  --display: clamp(64px, 15.5vw, 148px);   /* the hero only. --r6 keeps the letter's rhythm. */
 
   --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 40px; --s6: 64px; --s7: 96px; --s8: 128px; --s9: 192px;
   --air: var(--s7);
@@ -47,24 +48,92 @@ button, input, select, textarea { font: inherit; color: inherit; }
 em { font-style: italic; }
 
 /* ---------- the massif ---------- */
+/* The plate is the first paint and the LCP asset. The canvas takes over when it is drawn. */
 #massif, #massif-still {
   position: fixed; inset: 0; width: 100%; height: 100vh; height: 100svh; z-index: 0;
-  pointer-events: none; object-fit: cover; opacity: 0; transition: opacity 600ms var(--ease);
+  pointer-events: none; object-fit: cover;
 }
-#massif.is-ready, #massif-still:not([hidden]) { opacity: 1; }
-#massif[hidden] { display: none; }
-/* desktop: contours only where the text is not; the window right of the column */
-@media (min-width: 768px) {
-  #massif-still {
-    -webkit-mask-image: linear-gradient(to right, transparent 0, transparent 64vw, #000 76vw);
-    mask-image: linear-gradient(to right, transparent 0, transparent 64vw, #000 76vw);
-  }
+#massif-still { opacity: 1; transition: opacity 400ms var(--ease); }
+#massif { opacity: 0; transition: opacity 200ms linear; }
+#massif.is-ready { opacity: 1; }
+#massif[hidden], #massif-still[hidden] { display: none; }
+/* with no script at all the plate cannot answer the scroll, so it stops being a page-wide ground
+   and becomes what it is: the hero's sheet. The letter below it reads on clean night. */
+html:not(.jsr) #massif-still { position: absolute; top: 0; left: 0; height: 100vh; height: 100svh; }
+
+/* ---------- the hero: the survey in motion ---------- */
+.hero-sheet {
+  position: relative; z-index: 2;
+  min-height: calc(100svh - var(--bar));
+  display: flex; flex-direction: column; justify-content: flex-end;
+  max-width: var(--frame); margin: 0 auto;
+  padding: 0 var(--s3) var(--s6);
 }
-/* phone: under the text, faint; louder at the three moments and the door */
-/* phone: the shader carries the ink level, the canvas stays at full opacity */
-@media (max-width: 767px) {
-  #massif-still:not([hidden]) { opacity: 0.18; }
+.hero-sheet .display {
+  font-size: var(--display); line-height: 0.9; letter-spacing: -0.035em;
+  max-width: 9ch; margin: 0 0 var(--s3);
 }
+.hero-sheet .deck {
+  font-size: var(--r2); font-style: italic; line-height: 1.35;
+  max-width: 32ch; margin: 0;
+}
+/* the mask has to clear the descender of the y, or "Say" loses its tail */
+.w { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.24em; margin-bottom: -0.24em; }
+.w i { display: inline-block; font-style: normal; }
+html.js .w i { transform: translateY(112%); }
+
+/* small type over a live contour field: knocked out of the night ground, no shadow, no scrim */
+.knock {
+  background: var(--night);
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+  padding: 0.10em 0.36em; margin-left: -0.36em;
+}
+
+@media (min-width: 900px) {
+  .hero-sheet { justify-content: center; }
+  .hero-sheet .display { max-width: 8ch; }
+  .hero-sheet .deck { max-width: 36ch; }
+}
+/* the panel hairline runs at left:196px and the letter is offset 220px: the hero starts with it */
+@media (min-width: 1000px) {
+  .hero-sheet { padding-left: calc(var(--s3) + 220px); }
+}
+
+/* ---------- the spot height, pinned to the summit ---------- */
+.spot { position: fixed; z-index: 2; left: 76%; top: 21.8%; width: 0; height: 0; pointer-events: none; }
+html.gl .spot { left: 0; top: 0; visibility: hidden; transition: opacity 200ms linear; }
+.spot .cross::before, .spot .cross::after { content: ""; position: absolute; background: var(--brick); }
+.spot .cross::before { left: -7px; top: 0; width: 15px; height: 1px; }
+.spot .cross::after { left: 0; top: -7px; width: 1px; height: 15px; }
+.spot .lead { position: absolute; top: 0; width: 24px; height: 1px; background: var(--brick); right: 9px; }
+.spot .val {
+  position: absolute; top: -11px; font-family: var(--mono); font-size: var(--r-1);
+  letter-spacing: 0.06em; line-height: 1.35; color: var(--cream); font-variant-numeric: tabular-nums;
+  white-space: nowrap; right: 38px; text-align: right;
+}
+.spot .val s { display: block; text-decoration: none; color: #b3afa7; letter-spacing: 0.1em; }
+/* the label hangs on whichever side of the peak has room */
+.spot.noflip .lead { right: auto; left: 9px; }
+.spot.noflip .val { right: auto; left: 38px; text-align: left; }
+@media (min-width: 900px) {
+  html:not(.gl) .spot { left: 58.9%; top: 26.2%; }
+  html:not(.gl) .spot .lead { right: auto; left: 9px; }
+  html:not(.gl) .spot .val { right: auto; left: 38px; text-align: left; }
+}
+
+/* ---------- the sheet note, one line under the hero ---------- */
+.ticks {
+  position: relative; z-index: 2; height: 7px; max-width: var(--col);
+  border-top: 1px solid var(--hairline);
+  background-image: repeating-linear-gradient(to right, var(--hairline) 0 1px, transparent 1px 40px);
+  background-size: 100% 5px; background-repeat: no-repeat; background-position: 0 0;
+}
+.sheetnote {
+  position: relative; z-index: 2; max-width: var(--col);
+  font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.06em; line-height: 1.5;
+  color: var(--cream-60); margin: 0; padding: var(--s2) 0 var(--s5);
+}
+@media (min-width: 1000px) { .ticks, .sheetnote { margin-left: 220px; } }
 
 /* ---------- the bar ---------- */
 .bar {
@@ -79,6 +148,9 @@ em { font-style: italic; }
 [data-readout] { transition: color var(--t1) var(--ease); }
 [data-readout].is-summit { color: var(--brick); }
 .readout-bar { display: none; }
+/* on the first screen the spot height is the readout; two altitudes in one frame is one too many */
+.readout-bar { opacity: 0; transition: opacity var(--t2) var(--ease); }
+.bar.is-on .readout-bar { opacity: 1; }
 @media (max-width: 767px) {
   .readout-bar { display: flex; flex-direction: column; align-items: center; line-height: 1.2; letter-spacing: 0.06em; }
   .readout-station { font-size: 11px; color: #6b6862; transition: color var(--t1) var(--ease); }
@@ -112,11 +184,12 @@ em { font-style: italic; }
   margin: 0 0 var(--s2);
 }
 @media (min-width: 1000px) {
-  .note { position: absolute; left: -220px; width: 164px; text-align: right; margin: 0; padding-top: 0.35em; transition: opacity var(--t1) var(--ease); }
-  .note.is-yield { opacity: 0; }
+  html.js .note { position: absolute; left: -220px; width: 164px; text-align: right; margin: 0; padding-top: 0.35em; transition: opacity var(--t1) var(--ease); }
+  html.js .note.is-yield { opacity: 0; }
 }
 /* on phones every note becomes one mono line above the paragraph it annotates */
 @media (max-width: 999px) {
+  .titleblock { display: none; }   /* instrument fields are desktop marginalia; a phone must lead with the headline */
   .note { font-size: 12px; letter-spacing: 0.03em; line-height: 1.45; margin: 0 0 6px; max-width: 48ch; hyphens: none; -webkit-hyphens: none; }
 }
 
@@ -147,8 +220,6 @@ h1.display { margin: 0 0 var(--s3); }
 .quiet { color: var(--cream-60); font-style: italic; line-height: 1.8; }
 .mono-line { font-family: var(--mono); font-size: var(--r-1); letter-spacing: 0.08em; color: var(--cream-60); text-transform: uppercase; }
 .small { font-size: var(--r0); line-height: 1.5; color: var(--cream-60); }
-.hero { padding-top: var(--s6); }
-.hero p:not(.dateline):not(.deck) { margin-top: 0; }
 
 /* the three moments: one line, the massif behind everything */
 .moment { position: relative; padding: var(--air-big) 0; min-height: 60vh; min-height: 60svh; display: flex; align-items: center; }
@@ -216,7 +287,6 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
   .moment { min-height: 0; padding: var(--s4) 0; }
   .moment.summit { min-height: 50svh; padding: var(--s5) 0; }
   .moment.summit .break { font-size: clamp(80px, 22vw, 120px); }
-  .hero { padding-top: var(--s4); }
   .hint { margin-top: 2px; }
 }
 @media (max-width: 479px) { .block { hyphens: auto; -webkit-hyphens: auto; } }
@@ -226,4 +296,6 @@ form .btn { width: 100%; margin: var(--s2) 0 var(--s2); }
   html { scroll-behavior: auto; }
   [data-reveal], [data-reveal].is-in { opacity: 1; transform: none; transition: none; }
   #massif, #massif-still, .bar, .btn, a, input, select, textarea, body.is-typing .bar { transition: none; }
+  html.js .w i { transform: none; }
+  html.gl .spot { transition: none; }
 }

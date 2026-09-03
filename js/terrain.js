@@ -58,6 +58,7 @@ const FRAG = `
   varying vec3 vPos;
   uniform float uInterval, uWeight, uReveal, uAlpha;
   uniform float uWash, uFadeA, uFadeB, uGhost;
+  uniform float uThinA, uIndexW, uIndexA;
   uniform float uMaskL, uMaskR;
   uniform float uRedH, uRedW, uRedA;
   uniform float uFogNear, uFogFar;
@@ -72,8 +73,8 @@ const FRAG = `
   void main() {
     float c = vH / uInterval;
     float fw = fwidth(c);
-    float thin = band(c, uWeight) * 0.55;
-    float index = band(c / 5.0, uWeight * 1.55);
+    float thin = band(c, uWeight) * uThinA;
+    float index = band(c / 5.0, uWeight * uIndexW) * uIndexA;
     float a = max(thin, index);
     a = mix(a, uWash, smoothstep(uFadeA, uFadeB, fw));
 
@@ -127,6 +128,7 @@ export async function initTerrain({ canvas, mobile = false, onReady } = {}) {
     uAlpha: { value: mobile ? 0.10 : 0.50 },
     uWash: { value: mobile ? 0.10 : 0.075 },
     uFadeA: { value: 0.22 }, uFadeB: { value: 0.62 }, uGhost: { value: 0.0 },
+    uThinA: { value: 0.55 }, uIndexW: { value: 1.55 }, uIndexA: { value: 1.0 },
     uMaskL: { value: -2 }, uMaskR: { value: -1.9 },
     uRedH: { value: 0 }, uRedW: { value: 1.3 }, uRedA: { value: 0.8 },
     uFogNear: { value: 22 }, uFogFar: { value: 46 },
@@ -138,6 +140,13 @@ export async function initTerrain({ canvas, mobile = false, onReady } = {}) {
   const mesh = new THREE.Mesh(geo, mat);
   mesh.rotation.x = -Math.PI / 2;              // row 0 (north) lies at -z, the camera sits south of the sheet
   scene.add(mesh);
+
+  // the highest vertex in world space, so a spot height can be pinned to the real peak
+  scene.updateMatrixWorld(true);
+  let best = 0;
+  for (let i = 1; i < dem.h.length; i++) if (dem.h[i] > dem.h[best]) best = i;
+  const summitWorld = mesh.localToWorld(new THREE.Vector3().fromBufferAttribute(geo.attributes.position, best));
+  const _p = new THREE.Vector3();
 
   // From the Dudh Kosi side looking north. The Nuptse-Everest-Lhotse ridge reads as one line and the
   // summit lands right of the reading column. y climbs with the reader, then stops at the summit.
@@ -212,7 +221,7 @@ export async function initTerrain({ canvas, mobile = false, onReady } = {}) {
     setAltitude(m) {
       uniforms.uReveal.value = (m / 1000) * EXAG;
       uniforms.uRedH.value = (Math.min(m, ringCap) / 1000) * EXAG;
-      ghostAlt = 0.20 * Math.max(0, Math.min(1, (m - 2200) / 1000));   // dark through the hero, a ghost by Lukla
+      ghostAlt = 0.17 + 0.13 * Math.max(0, Math.min(1, (m - 2200) / 1600));   // the unsurveyed sheet is never fully dark
       uniforms.uGhost.value = Math.min(0.75, ghostAlt + ghostBoost);
       const t = Math.max(0, Math.min(1, (m - 8000) / 848.86));   // the ring thickens over the last 848 m
       uniforms.uRedW.value = 1.0 + 1.1 * t;
@@ -225,6 +234,21 @@ export async function initTerrain({ canvas, mobile = false, onReady } = {}) {
     // at a break moment the unsurveyed ground comes up too, so the sheet fills the screen
     setGhostBoost(b) { ghostBoost = b; uniforms.uGhost.value = Math.min(0.75, ghostAlt + b); dirty = true; },
     setPointer(x, y) { pointer.x = x; pointer.y = y; dirty = true; },
+    summitM: dem.max * 1000,
+    // normalised screen position of the summit, so a mono spot height can be pinned to the peak
+    projectSummit() {
+      camera.updateMatrixWorld();
+      _p.copy(summitWorld).project(camera);
+      return { x: _p.x * 0.5 + 0.5, y: -_p.y * 0.5 + 0.5 };
+    },
+    // the hero owns its own camera: numbers in, no taste in the module
+    setRig(next) {
+      const v = (a) => new THREE.Vector3(a[0], a[1], a[2]);
+      if (next.land) Object.assign(land, { fov: next.land.fov ?? land.fov, from: v(next.land.from), to: v(next.land.to), look: v(next.land.look), lookTo: v(next.land.lookTo) });
+      if (next.port) Object.assign(port, { fov: next.port.fov ?? port.fov, from: v(next.port.from), to: v(next.port.to), look: v(next.port.look), lookTo: v(next.port.lookTo) });
+      rig = camera.aspect < 1 ? port : land;
+      camera.fov = rig.fov; camera.updateProjectionMatrix(); dirty = true;
+    },
     tune(k, v) { if (uniforms[k]) { uniforms[k].value = v; dirty = true; } },
     destroy() {
       alive = false; ro.disconnect(); io.disconnect();

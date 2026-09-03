@@ -22,20 +22,17 @@
 <meta name="twitter:image" content="https://www.nepalaccelerates.com/assets/og.png">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;1,7..72,400&family=IBM+Plex+Mono&display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@400&text=%E0%A4%95%E0%A4%BE%E0%A4%A0%E0%A4%AE%E0%A4%BE%E0%A4%A1%E0%A5%8C%E0%A4%82%2C%E0%A4%AD%E0%A4%A6%E0%A5%8C%E0%A5%A8%E0%A5%A6%E0%A5%AE%E0%A5%A9&display=swap">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
 <link rel="stylesheet" href="css/style.css">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.min.js"}}</script>
 </head>
 <body>
 
 <canvas id="massif" aria-hidden="true"></canvas>
-<img id="massif-still" alt="" hidden aria-hidden="true"
-     src="assets/img/massif-summit-1440.webp"
-     srcset="assets/img/massif-summit-390.webp 390w, assets/img/massif-summit-1440.webp 1440w"
-     sizes="100vw" decoding="async" loading="lazy">
+<img id="massif-still" alt="" aria-hidden="true" decoding="async" fetchpriority="high"
+     src="assets/img/plate-survey-1440.webp"
+     srcset="assets/img/plate-survey-390.webp 780w, assets/img/plate-survey-1440.webp 2160w"
+     sizes="100vw">
 
 <header class="bar" data-nav>
   <a class="mark" href="/" aria-label="n/acc, home">n<span class="slash">/</span>acc</a>
@@ -46,7 +43,22 @@
   <a class="btn btn-bar" href="#door">Write back</a>
 </header>
 
-<main class="sheet">
+<div class="spot" id="spot" aria-hidden="true">
+  <span class="cross"></span><span class="lead"></span>
+  <span class="val"><b data-spot-alt>8,848.86</b> m<s data-spot-station>Sagarmatha</s></span>
+</div>
+
+<main>
+
+<section class="hero-sheet" data-hero>
+  <h1 class="display"><span class="w"><i>Say</i></span> <span class="w"><i>it</i></span> <span class="w"><i>out</i></span> <span class="w"><i>loud.</i></span></h1>
+  <p class="deck"><span class="knock">For the 2,300 leaving today and the one still deciding.</span></p>
+</section>
+
+<div class="sheet">
+
+  <div class="ticks" aria-hidden="true"></div>
+  <p class="sheetnote"><span class="knock">Kathmandu, 2083 BS. Sagarmatha, 34.56 km square, SRTM 1 arc-second, <span data-ci>contours 120 m, index 600 m</span>.<br>Surveyed by the ones who stayed.</span></p>
 
   <aside class="climb" data-climb aria-label="Altitude and stations on the climb">
     <p class="readout readout-margin"><span data-readout>1,400 m</span></p>
@@ -62,11 +74,7 @@
     </ol>
   </aside>
 
-  <section class="block hero" data-hero>
-    <aside class="note titleblock">Sheet 1 of 1<br>Sagarmatha, 34.56 km square<br>SRTM 1 arc-second, 135 m per cell<br>Contours 40 m, index 200 m<br>Surveyed by the ones who stayed</aside>
-    <p class="dateline">Kathmandu, 2083 BS</p>
-    <h1 class="display" data-reveal>Say it out loud.</h1>
-    <p class="deck">For the 2,300 leaving today and the one still deciding.</p>
+  <section class="block">
     <aside class="note keep">839,270 labour permits in FY 2024/25. About 2,300 a day. DoFE.</aside>
     <p><em>Nepal.</em> Say it like it weighs something. The way your grandmother said it, not as geography but as prayer. The way your father said it under his breath on a construction site in Doha at 2am when nobody was listening. The way 839,270 people said it last year at the departure gate, one last look back before the plane.</p>
     <aside class="note">1,401 bodies flown home, FY 2024/25. One every six hours.</aside>
@@ -165,7 +173,7 @@
   <hr class="rule">
 
   <section class="block door" id="door">
-    <aside class="note keep spot"><span class="alt">Spot height<br>8,848.86 m<br>Sagarmatha</span></aside>
+    <aside class="note keep">Spot height<br>8,848.86 m<br>Sagarmatha</aside>
     <p class="lead">Write back.</p>
     <p>You're building something, backing something, or done watching from the sidelines. One message is where it starts. It reaches Zens and nobody else.</p>
 
@@ -211,6 +219,8 @@
     <p class="sign" lang="ne">काठमाडौं, भदौ २०८३</p>
     <p class="mono-line">Kathmandu, Bhadra 2083 BS. September 2026.</p>
   </section>
+
+</div>
 
 </main>
 
