@@ -310,11 +310,11 @@ function setIntroVars(speed, launch) {
   if (!introEl) return;
   const s = Math.max(0, Math.min(1, speed));
   const rest = 1 - launch;
-  const amp = (0.6 + 30 * Math.pow(s, 2.3)) * rest;
+  const amp = (0.6 + 40 * Math.pow(s, 2.1)) * rest;
   let jx = (Math.random() * 2 - 1) * amp;
   const jy = (Math.random() * 2 - 1) * amp * 0.55;
-  if (s > 0.32 && Math.random() < 0.05 + s * 0.13) jx += (Math.random() * 2 - 1) * s * 26;   // an occasional glitch slice
-  const split = Math.pow(s, 1.9) * 16 * rest + launch * 46;
+  if (s > 0.3 && Math.random() < 0.06 + s * 0.16) jx += (Math.random() * 2 - 1) * s * 30;   // an occasional glitch slice
+  const split = Math.pow(s, 1.6) * 26 * rest + launch * 60;
   const st = introEl.style;
   st.setProperty('--speed', s.toFixed(3));
   st.setProperty('--split', split.toFixed(1) + 'px');
@@ -329,7 +329,7 @@ function introTick(now) {
   const loadFrac = introCeil / 4;                       // the milestone-driven ceiling
   const timeFrac = Math.min(1, el / MIN_MS);            // a floor, so an instant load still builds visibly
   const targetS = Math.min(loadFrac, timeFrac);         // gated by the slower of real-load and the floor
-  introSpeed += (targetS - introSpeed) * 0.14;
+  introSpeed += (targetS - introSpeed) * 0.16;
   if (runnerEl) { try { runnerEl.playbackRate = 1 + introSpeed * 2.6; } catch (e) {} }   // the clip accelerates
   setIntroVars(introSpeed, 0);
   if ((introCeil >= 4 && el >= MIN_MS) || el >= CAP_MS) { startReveal(); return; }   // real ready, or the hard cap
@@ -484,12 +484,39 @@ if (form) {
   const errBox = $('[data-form-error]');
   const sent = $('[data-form-sent]');
   const field = (name) => $(`[name="${name}"]`, form);
-  const MSG = { name: 'Add your name.', email: 'That email has a typo. Check the part after the @.', reason: 'Pick one.', message: 'Write something. One line is enough.' };
-  const showError = (msg, name) => {
-    $$('.is-invalid', form).forEach((el) => el.classList.remove('is-invalid'));
-    const f = name && field(name); if (f) { f.classList.add('is-invalid'); f.focus({ preventScroll: false }); }
-    if (errBox) { errBox.innerHTML = msg; errBox.hidden = false; }
+  // each error is a survey-voice strip: a mono label and a plain human line, same shape as the PORTAL decoy
+  const MSG = {
+    name: { k: 'Name missing', t: 'Add your name so we know who is writing.' },
+    email: { k: 'Check the email', t: 'That address has a typo. Look at the part after the @.' },
+    reason: { k: 'Pick a reason', t: 'Choose one of the four so we can send it to the right place.' },
+    message: { k: 'Message empty', t: "Add a line about what you're building, or what's in your way." },
   };
+  const reasons = $('.reasons', form);
+  // restart the one-shot recalibration shake on whichever element is wrong (reduced motion disables it in CSS)
+  const recal = (el) => { if (!el) return; el.classList.remove('is-recal'); void el.offsetWidth; el.classList.add('is-recal'); };
+  const showError = (msg, name) => {
+    $$('.is-invalid, .is-recal', form).forEach((el) => el.classList.remove('is-invalid', 'is-recal'));
+    if (reasons) reasons.classList.remove('is-invalid', 'is-recal');
+    let target = null;
+    if (name === 'reason') {
+      if (reasons) reasons.classList.add('is-invalid');   // the radiogroup marks as a whole, not a hidden input
+      const r = field('reason'); if (r) r.focus({ preventScroll: false });
+      target = reasons;
+    } else {
+      const f = name && field(name); if (f) { f.classList.add('is-invalid'); f.focus({ preventScroll: false }); target = f; }
+    }
+    if (errBox) {
+      const wasHidden = errBox.hidden;
+      errBox.innerHTML = (msg && typeof msg === 'object')
+        ? `<b>${msg.k}</b><span>${msg.t}</span>`
+        : `<b>Not sent</b><span>${msg}</span>`;   // network / server line arrives as ready HTML
+      errBox.hidden = false;
+      if (!wasHidden) { errBox.style.animation = 'none'; void errBox.offsetWidth; errBox.style.animation = ''; }  // replay the settle on a repeat error
+    }
+    recal(target);
+  };
+  // clear the group's mark the moment a reason is chosen
+  if (reasons) reasons.addEventListener('change', () => reasons.classList.remove('is-invalid'));
   const check = (data) => {
     if (!data.name.trim()) return 'name';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return 'email';
@@ -524,7 +551,7 @@ if (form) {
   });
   const q = new URLSearchParams(location.search);
   if (q.get('sent') === '1') { form.hidden = true; if (sent) sent.hidden = false; }
-  else if (q.get('error')) showError(MSG[q.get('error')] || 'Something was missing. Fill every field and send again.', q.get('error'));
+  else if (q.get('error')) showError(MSG[q.get('error')] || 'A field was left blank. Fill them all and send again.', q.get('error'));
 }
 
 // ---------- Nepal time in the footer ----------
@@ -543,28 +570,53 @@ if (panel) {
   const pform = document.getElementById('panel-form');
   const perr = $('[data-panel-err]');
   const pbtn = $('.panel-submit', panel);
+  const pcard = $('.panel-card', panel);
   const plabel = pbtn ? pbtn.textContent : 'Sign in';
+  const uEl = () => document.getElementById('p-user');
+  const pEl = () => document.getElementById('p-pass');
   let lastFocus = null;
-  const open = () => { lastFocus = document.activeElement; panel.hidden = false; document.body.style.overflow = 'hidden'; const u = document.getElementById('p-user'); if (u) setTimeout(() => u.focus(), 30); };
-  const close = () => { panel.hidden = true; document.body.style.overflow = ''; if (perr) perr.hidden = true; if (pform) pform.reset(); if (pbtn) { pbtn.disabled = false; pbtn.textContent = plabel; } if (lastFocus && lastFocus.focus) lastFocus.focus(); };
+  const clearMarks = () => $$('input.is-bad', panel).forEach((el) => el.classList.remove('is-bad'));
+  // one sharp shake, restarted each time (reduced motion disables it in CSS)
+  const shake = () => { if (!pcard) return; pcard.classList.remove('is-rejected'); void pcard.offsetWidth; pcard.classList.add('is-rejected'); };
+  // the crafted rejection: a hairline strip in the survey's restricted-terminal voice, the named fields
+  // marked red and left as typed, and one shake. It is a decoy: the station never opens.
+  const reject = (html, bad) => {
+    clearMarks();
+    (bad || []).forEach((id) => { const el = document.getElementById(id); if (el) el.classList.add('is-bad'); });
+    if (perr) { perr.innerHTML = html; perr.hidden = false; }
+    shake();
+  };
+  const open = () => { lastFocus = document.activeElement; panel.hidden = false; document.body.style.overflow = 'hidden'; const u = uEl(); if (u) setTimeout(() => u.focus(), 30); };
+  const close = () => {
+    panel.hidden = true; document.body.style.overflow = '';
+    if (perr) perr.hidden = true; clearMarks(); if (pcard) pcard.classList.remove('is-rejected');
+    if (pform) pform.reset();
+    if (pbtn) { pbtn.disabled = false; delete pbtn.dataset.busy; pbtn.textContent = plabel; }
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  };
   openers.forEach((b) => b.addEventListener('click', open));
   closers.forEach((b) => b.addEventListener('click', close));
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) close(); });
   if (pform) pform.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (perr) perr.hidden = true;
-    const u = (document.getElementById('p-user').value || '').trim();
-    const p = document.getElementById('p-pass').value || '';
-    if (!u || !p) { if (perr) { perr.textContent = 'Enter your username and password.'; perr.hidden = false; } return; }
-    if (pbtn) { pbtn.disabled = true; pbtn.textContent = 'Signing in'; }
-    try {
-      const r = await fetch('https://mail.nepalaccelerates.com/api/team/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
-      const j = await r.json().catch(() => ({}));
-      if (perr) { perr.textContent = j.error || 'Invalid username or password.'; perr.hidden = false; }
-    } catch {
-      if (perr) { perr.textContent = 'Could not reach the server. Try again.'; perr.hidden = false; }
+    const u = (uEl().value || '').trim();
+    const p = pEl().value || '';
+    if (!u || !p) {
+      reject('<b>Incomplete reading</b><span>Enter a callsign and key before the station will answer.</span>', [!u && 'p-user', !p && 'p-pass'].filter(Boolean));
+      (!u ? uEl() : pEl()).focus();
+      return;
     }
-    if (pbtn) { pbtn.disabled = false; pbtn.textContent = plabel; }
-    const pp = document.getElementById('p-pass'); if (pp) { pp.value = ''; pp.focus(); }
+    if (perr) perr.hidden = true;
+    clearMarks();
+    if (pbtn) { pbtn.disabled = true; pbtn.dataset.busy = '1'; pbtn.textContent = 'Checking the register'; }
+    try {
+      // the real 401 still fires; the decoy ignores whatever it returns and rejects regardless
+      await fetch('https://mail.nepalaccelerates.com/api/team/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+      reject('<b>Access denied &middot; 401</b><span>No benchmark answers to those coordinates. This station stays sealed.</span>', ['p-user', 'p-pass']);
+    } catch {
+      reject('<b>No signal</b><span>Could not raise the station. Check the line and try again.</span>', []);
+    }
+    if (pbtn) { pbtn.disabled = false; delete pbtn.dataset.busy; pbtn.textContent = plabel; }
+    const pp = pEl(); if (pp) pp.focus();
   });
 }
